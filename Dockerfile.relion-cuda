@@ -21,6 +21,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget curl vim nano \
  && rm -rf /var/lib/apt/lists/*
 
+# Install Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && \
+    apt-get install -y python3.11 python3.11-dev python3.11-distutils && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Miniconda
+WORKDIR /opt
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && \
+    bash miniconda.sh -b -p /opt/conda && \
+    rm miniconda.sh
+ENV PATH=/opt/conda/bin:$PATH
+
+# Clone RELION
+RUN git clone https://github.com/3dem/relion.git
+WORKDIR relion
+RUN git fetch --all --tags && git checkout ${RELION_REF}
+
+# Create Conda environment
+COPY environment.yml /opt/relion/environment.yml
+RUN conda env create -f /opt/relion/environment.yml && conda clean -afy
+
 # Build RELION
 WORKDIR /opt
 RUN git clone https://github.com/3dem/relion.git
