@@ -35,6 +35,8 @@ WORKDIR relion
 RUN git fetch --all --tags && git checkout ${RELION_REF}
 
 # Create Conda environment
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN conda env create -f /opt/relion/environment.yml && conda clean -afy
 
 # Build RELION
