@@ -10,6 +10,10 @@ FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_REF=ver5.0
 
+ARG CTFFIND_VER=4.1.14
+ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
+
+
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake git pkg-config \
@@ -20,6 +24,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfltk1.3-dev libx11-dev libxft-dev libxext-dev libxinerama-dev libxrender-dev \
     wget curl vim nano \
  && rm -rf /var/lib/apt/lists/*
+
+# TODO: Install CTFFind
+WORKDIR /opt
+RUN set -eux; \
+  curl -fL "https://grigoriefflab.umassmed.edu/system/tdf?path=ctffind-${CTFFIND_VER}-linux64.tar.gz&file=1" -o /tmp/ctffind.tgz; \
+  mkdir -p "$CTFFIND_HOME"; \
+  tar -xzf /tmp/ctffind.tgz -C "$CTFFIND_HOME"; rm -f /tmp/ctffind.tgz; \
+  install -m 0755 "$CTFFIND_HOME"/bin/* /usr/local/bin/; \
+  ctffind --version
 
 # Install Miniconda
 WORKDIR /opt
