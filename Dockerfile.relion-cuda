@@ -1,0 +1,42 @@
+# build with: docker build -f Dockerfile.relion-cuda --build-arg RELION_REF=ver5.0 --build-arg CUDA_VERSION=12.8.0 -t jidaniel/relion:5.0-cuda12.8 .
+#         or: docker build -f Dockerfile.relion-cuda --build-arg RELION_REF=ver5.0 --build-arg CUDA_VERSION=12.4.1 -t jidaniel/relion:5.0-cuda12.4 .
+#         or: docker build -f Dockerfile.relion-cuda --build-arg RELION_REF=ver5.0 --build-arg CUDA_VERSION=11.8.0 -t jidaniel/relion:5.0-cuda11.8 .
+# run interactively with: docker run --gpus all -it --rm jidaniel/relion:5.0-cuda12.8 /bin/bash
+
+
+ARG CUDA_VERSION=12.8.0
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG RELION_REF=ver5.0
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git pkg-config \
+    openmpi-bin libopenmpi-dev \
+    libfftw3-dev libtiff-dev libpng-dev \
+    ghostscript pbzip2 xz-utils zstd \
+    ca-certificates \
+    libfltk1.3-dev libx11-dev libxft-dev libxext-dev libxinerama-dev libxrender-dev \
+    wget curl vim nano \
+ && rm -rf /var/lib/apt/lists/*
+
+# Build RELION
+WORKDIR /opt
+RUN git clone https://github.com/3dem/relion.git
+WORKDIR relion
+RUN git fetch --all --tags && git checkout ${RELION_REF}
+
+RUN mkdir -p build
+WORKDIR build
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release
+RUN make -j"$(nproc)"
+RUN make install
+
+ENV PATH="/usr/local/bin:${PATH}"
+
+# Default to non-root user (optional)
+# RUN useradd -ms /bin/bash relion && chown -R relion:relion /opt
+# USER relion
+
+WORKDIR /work
