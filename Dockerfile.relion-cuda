@@ -21,12 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget curl vim nano \
  && rm -rf /var/lib/apt/lists/*
 
-# Install Python 3.11
-RUN add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update && \
-    apt-get install -y python3.11 python3.11-dev python3.11-distutils && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install Miniconda
 WORKDIR /opt
 RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && \
