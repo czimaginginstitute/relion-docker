@@ -37,6 +37,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Free up runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          docker system df
+
       - name: Set up QEMU (not used for CUDA, but harmless)
         uses: docker/setup-qemu-action@v3
 
