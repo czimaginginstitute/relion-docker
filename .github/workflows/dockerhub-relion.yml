@@ -42,22 +42,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Checkout portal-particle-extraction
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/portal-particle-extraction
-          token: ${{ secrets.GH_TOKEN }}
-          path: portal-particle-extraction
-          fetch-depth: 1
-
-      - name: Checkout relion-sub-tomogram-pipelines
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/relion-sub-tomogram-pipelines
-          token: ${{ secrets.GH_TOKEN }}
-          path: relion-sub-tomogram-pipelines
-          fetch-depth: 1
-
       - name: Free up runner disk space
         run: |
           set +e
@@ -118,6 +102,31 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      - name: Free up runner disk space (again)
+        run: |
+          set +e
+          docker rmi ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+          docker rmi ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+          docker builder prune -af
+          docker system prune -af --volumes
+          rm -rf /tmp/*
+
+      - name: Checkout portal-particle-extraction
+        uses: actions/checkout@v5
+        with:
+          repository: czimaginginstitute/portal-particle-extraction
+          token: ${{ secrets.GH_TOKEN }}
+          path: portal-particle-extraction
+          fetch-depth: 1
+
+      - name: Checkout relion-sub-tomogram-pipelines
+        uses: actions/checkout@v5
+        with:
+          repository: czimaginginstitute/relion-sub-tomogram-pipelines
+          token: ${{ secrets.GH_TOKEN }}
+          path: relion-sub-tomogram-pipelines
+          fetch-depth: 1
 
       - name: Build & Push CDP-RELION-STA Image
         uses: docker/build-push-action@v6
