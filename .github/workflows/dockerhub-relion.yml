@@ -48,6 +48,7 @@ jobs:
           repository: czimaginginstitute/portal-particle-extraction
           token: ${{ secrets.GH_TOKEN }}
           path: portal-particle-extraction
+          fetch-depth: 1
 
       - name: Checkout relion-sub-tomogram-pipelines
         uses: actions/checkout@v5
@@ -55,6 +56,7 @@ jobs:
           repository: czimaginginstitute/relion-sub-tomogram-pipelines
           token: ${{ secrets.GH_TOKEN }}
           path: relion-sub-tomogram-pipelines
+          fetch-depth: 1
 
       - name: Free up runner disk space
         run: |
