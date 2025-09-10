@@ -10,9 +10,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
-  DOCKER_FILE: Dockerfile.relion-cuda
   RELION_REF_DEFAULT: ver5.0
+  RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
+  CDP_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cryoet-data-portal-relion-sta
 
 jobs:
   build-push:
@@ -36,6 +36,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Checkout portal-particle-extraction
+        uses: actions/checkout@v5
+        with:
+          repository: czimaginginstitute/portal-particle-extraction
+          token: ${{ secrets.GH_TOKEN }}
+          path: portal-particle-extraction
+
+      - name: Checkout relion-sub-tomogram-pipelines
+        uses: actions/checkout@v5
+        with:
+          repository: czimaginginstitute/relion-sub-tomogram-pipelines
+          token: ${{ secrets.GH_TOKEN }}
+          path: relion-sub-tomogram-pipelines
 
       - name: Free up runner disk space
         run: |
@@ -70,10 +84,10 @@ jobs:
           echo "tag_main=${TAG_MAIN}" >> $GITHUB_OUTPUT
           echo "tag_full=${TAG_FULL}" >> $GITHUB_OUTPUT
 
-      - name: Build & Push
+      - name: Build & Push RELION-only Image
         uses: docker/build-push-action@v6
         with:
-          file: ${{ env.DOCKER_FILE }}
+          file: Dockerfile.relion-cuda
           context: .
           push: true
           platforms: linux/amd64
@@ -81,11 +95,34 @@ jobs:
             RELION_REF=${{ steps.meta.outputs.relion_ref }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
             org.opencontainers.image.title=relion
             org.opencontainers.image.description=RELION built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push CDP-RELION-STA Image
+        uses: docker/build-push-action@v6
+        with:
+          file: extras/Dockerfile.cdp-relion-sta
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            RELION_REF=${{ steps.meta.outputs.relion_ref }}
+            CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
+            PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
+            PYRELION_LOCATION=relion-sub-tomogram-pipelines
+          tags: |
+            ${{ env.CDP_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.CDP_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+          labels: |
+            org.opencontainers.image.title=cryoet-data-portal-relion-sta
+            org.opencontainers.image.description=RELION with CryoET Data Portal STA pipeline tools, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha

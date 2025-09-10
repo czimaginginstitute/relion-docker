@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget curl vim nano \
  && rm -rf /var/lib/apt/lists/*
 
-# TODO: Install CTFFind
+# Install CTFFind
 WORKDIR /opt
 RUN set -eux; \
   curl -fL "https://grigoriefflab.umassmed.edu/system/tdf?path=ctffind-${CTFFIND_VER}-linux64.tar.gz&file=1" -o /tmp/ctffind.tgz; \
@@ -62,8 +62,7 @@ RUN make install
 
 ENV PATH="/usr/local/bin:${PATH}"
 
-# Default to non-root user (optional)
-# RUN useradd -ms /bin/bash relion && chown -R relion:relion /opt
-# USER relion
+RUN useradd -ms /bin/bash relion && chown -R relion:relion /opt
+USER relion
 
 WORKDIR /work
