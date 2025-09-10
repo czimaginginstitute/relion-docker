@@ -60,6 +60,7 @@ jobs:
 
       - name: Free up runner disk space
         run: |
+          set +e
           sudo apt-get purge temurin-*-jdk adoptopenjdk-* adoptium-ca-certificates openjdk-* session-manager-plugin azure-cli google-cloud-cli heroku
           sudo apt-get purge postgresql-* libpq-dev libmysqlclient* msodbcsql* mssql-tools unixodbc-dev mysql-client* mysql-common mysql-server* php*-*sql sphinxsearch mongodb*
           sudo rm -rf /usr/share/dotnet
