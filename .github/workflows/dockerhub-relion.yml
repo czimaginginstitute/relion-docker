@@ -34,6 +34,11 @@ jobs:
             relion_ref: "ver5.0"
 
     steps:
+      - uses: mathio/gha-cleanup@v1
+        with:
+          remove-browsers: true
+          verbose: true
+
       - name: Checkout
         uses: actions/checkout@v5
 
@@ -53,9 +58,15 @@ jobs:
 
       - name: Free up runner disk space
         run: |
+          sudo apt-get purge temurin-*-jdk adoptopenjdk-* adoptium-ca-certificates openjdk-* session-manager-plugin azure-cli google-cloud-cli heroku
+          sudo apt-get purge postgresql-* libpq-dev libmysqlclient* msodbcsql* mssql-tools unixodbc-dev mysql-client* mysql-common mysql-server* php*-*sql sphinxsearch mongodb*
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/terraform
+          sudo rm -rf /usr/lib/jvm/ /usr/local/graalvm /usr/share/java/selenium-server*.jar
+          sudo rm -rf /usr/share/mysql* /opt/mssql-tools /usr/local/sqlpackage
+          sudo rm -rf /usr/local/bin/aliyun /usr/local/bin/aws /usr/local/bin/aws_completer /usr/local/aws-cli /usr/local/aws /usr/local/aws-sam-cli /usr/local/bin/azcopy* /usr/share/az_* /opt/az /usr/bin/az /usr/share/google-cloud-sdk /usr/lib/google-cloud-sdk /usr/local/bin/bicep /usr/local/bin/oc /usr/local/bin/oras /usr/local/lib/heroku
           docker system df
 
       - name: Set up QEMU (not used for CUDA, but harmless)

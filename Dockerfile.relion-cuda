@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libfltk1.3-dev libx11-dev libxft-dev libxext-dev libxinerama-dev libxrender-dev \
     wget curl vim nano \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install CTFFind
 WORKDIR /opt
@@ -44,7 +44,7 @@ ENV PATH=/opt/conda/bin:$PATH
 
 # Clone RELION
 WORKDIR /opt
-RUN git clone https://github.com/3dem/relion.git
+RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1
 WORKDIR relion
 RUN git fetch --all --tags && git checkout ${RELION_REF}
 
