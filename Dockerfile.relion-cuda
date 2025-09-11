@@ -35,12 +35,10 @@ RUN set -eux; \
 
 RUN which ctffind
 
-# Install Miniconda
-WORKDIR /opt
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm miniconda.sh
-ENV PATH=/opt/conda/bin:$PATH
+# Install Micromamba
+RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
+    | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
+SHELL ["/bin/bash", "-l", "-c"]
 
 # Clone RELION
 WORKDIR /opt
@@ -49,9 +47,7 @@ WORKDIR relion
 RUN git fetch --all --tags && git checkout ${RELION_REF}
 
 # Create Conda environment
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-RUN conda env create -f /opt/relion/environment.yml && conda clean -afy
+RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -a --yes
 
 # Build RELION
 RUN mkdir -p build

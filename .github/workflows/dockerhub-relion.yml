@@ -1,4 +1,4 @@
-name: Build & Push RELION (CUDA) to Docker Hub
+name: Build & Push RELION (CUDA) to Docker Hub & GitHub Packages
 
 on:
   push:
@@ -6,17 +6,22 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: dockerhub-relion-${{ github.ref }}
+  group: docker-relion-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   RELION_REF_DEFAULT: ver5.0
-  RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
-  CDP_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cryoet-data-portal-relion-sta
+  DOCKERHUB_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
+  DOCKERHUB_CDP_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cryoet-data-portal-relion-sta
+  GHCR_RELION_IMAGE_NAME: ghcr.io/${{ github.repository_owner,, }}/relion
+  GHCR_CDP_IMAGE_NAME: ghcr.io/${{ github.repository_owner,, }}/cryoet-data-portal-relion-sta
 
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     strategy:
       fail-fast: false
@@ -68,6 +73,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Compute tags and labels
         id: meta
         run: |
@@ -93,8 +105,10 @@ jobs:
             RELION_REF=${{ steps.meta.outputs.relion_ref }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
           tags: |
-            ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-            ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
             org.opencontainers.image.title=relion
             org.opencontainers.image.description=RELION built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
@@ -102,15 +116,16 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+
       - name: Free up runner disk space (again)
         run: |
           set +e
-          docker rmi ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-          docker rmi ${{ env.RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+          docker rmi ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+          docker rmi ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+          docker rmi ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+          docker rmi ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           docker builder prune -af
           docker system prune -af --volumes
-          rm -rf /tmp/*
 
       - name: Checkout portal-particle-extraction
         uses: actions/checkout@v5
@@ -141,8 +156,8 @@ jobs:
             PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
             PYRELION_LOCATION=relion-sub-tomogram-pipelines
           tags: |
-            ${{ env.CDP_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-            ${{ env.CDP_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
             org.opencontainers.image.title=cryoet-data-portal-relion-sta
             org.opencontainers.image.description=RELION with CryoET Data Portal STA pipeline tools, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
