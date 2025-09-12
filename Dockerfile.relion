@@ -5,11 +5,10 @@
 
 
 ARG CUDA_VERSION=12.8.0
-FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04 AS build
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_REF=ver5.0
-
 ARG CTFFIND_VER=4.1.14
 ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
 
@@ -52,7 +51,7 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 # Build RELION
 RUN mkdir -p build
 WORKDIR build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF
 RUN make -j"$(nproc)"
 RUN make install
 

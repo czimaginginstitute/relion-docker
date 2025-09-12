@@ -97,7 +97,7 @@ jobs:
       - name: Build & Push RELION-only Image
         uses: docker/build-push-action@v6
         with:
-          file: Dockerfile.relion-cuda
+          file: Dockerfile.relion
           context: .
           push: true
           platforms: linux/amd64
