@@ -1,5 +1,5 @@
 ARG DEBIAN_FRONTEND=noninteractive
-ARG RELION_REF=ver5.0
+ARG RELION_REF=5.0
 ARG CUDA_VERSION=12.8.0
 
 FROM jidaniel/relion:${RELION_REF}-cuda${CUDA_VERSION} AS base
@@ -18,10 +18,13 @@ RUN pip install uv
 RUN uv pip install /opt/relion-sub-tomogram-pipelines
 RUN uv pip install /opt/portal-particle-extraction
 RUN uv pip install octopi
-RUN rm -rf /opt/relion-sub-tomogram-pipelines
-RUN rm -rf /opt/portal-particle-extraction
+WORKDIR /
+USER root
+RUN ["/bin/sh", "-c", "rm -rf /opt/relion-sub-tomogram-pipelines"]
+RUN ["/bin/sh", "-c", "rm -rf /opt/portal-particle-extraction"]
+USER relion
 RUN pip cache purge
-RUN conda clean -afy
+RUN micromamba clean -afy
 RUN portal-particle-extraction --help
 RUN pyrelion --help
 RUN octopi --help

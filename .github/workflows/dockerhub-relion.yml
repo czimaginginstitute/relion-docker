@@ -39,15 +39,25 @@ jobs:
             relion_ref: "ver5.0"
 
     steps:
+      # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
+      - name: Maximize build space (#1)
       - uses: mathio/gha-cleanup@v1
         with:
           remove-browsers: true
           verbose: true
 
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Maximize build space (#2)
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 4096
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
 
-      - name: Free up runner disk space
+      - name: Maximize build space (#3)
         run: |
           set +e
           sudo apt-get purge temurin-*-jdk adoptopenjdk-* adoptium-ca-certificates openjdk-* session-manager-plugin azure-cli google-cloud-cli heroku
@@ -61,8 +71,8 @@ jobs:
           sudo rm -rf /usr/local/bin/aliyun /usr/local/bin/aws /usr/local/bin/aws_completer /usr/local/aws-cli /usr/local/aws /usr/local/aws-sam-cli /usr/local/bin/azcopy* /usr/share/az_* /opt/az /usr/bin/az /usr/share/google-cloud-sdk /usr/lib/google-cloud-sdk /usr/local/bin/bicep /usr/local/bin/oc /usr/local/bin/oras /usr/local/lib/heroku
           docker system df
 
-      - name: Set up QEMU (not used for CUDA, but harmless)
-        uses: docker/setup-qemu-action@v3
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -127,6 +137,11 @@ jobs:
           docker builder prune -af
           docker system prune -af --volumes
 
+      - name: Show disk space
+        run: |
+          df -h
+          docker system df
+
       - name: Checkout portal-particle-extraction
         uses: actions/checkout@v5
         with:
@@ -165,3 +180,8 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Show disk space (end)
+        run: |
+          df -h
+          docker system df
