@@ -47,17 +47,6 @@ jobs:
           verbose: true
 
       - name: Maximize build space (#2)
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 4096
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
-      - name: Maximize build space (#3)
         run: |
           set +e
           sudo apt-get purge temurin-*-jdk adoptopenjdk-* adoptium-ca-certificates openjdk-* session-manager-plugin azure-cli google-cloud-cli heroku
@@ -69,6 +58,8 @@ jobs:
           sudo rm -rf /usr/lib/jvm/ /usr/local/graalvm /usr/share/java/selenium-server*.jar
           sudo rm -rf /usr/share/mysql* /opt/mssql-tools /usr/local/sqlpackage
           sudo rm -rf /usr/local/bin/aliyun /usr/local/bin/aws /usr/local/bin/aws_completer /usr/local/aws-cli /usr/local/aws /usr/local/aws-sam-cli /usr/local/bin/azcopy* /usr/share/az_* /opt/az /usr/bin/az /usr/share/google-cloud-sdk /usr/lib/google-cloud-sdk /usr/local/bin/bicep /usr/local/bin/oc /usr/local/bin/oras /usr/local/lib/heroku
+          docker rm -vf $(docker ps -aq)
+          docker rmi -f $(docker images -aq)
           docker system df
 
       - name: Checkout
@@ -130,10 +121,8 @@ jobs:
       - name: Free up runner disk space (again)
         run: |
           set +e
-          docker rmi ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-          docker rmi ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
-          docker rmi ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-          docker rmi ${{ env.GHCR_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+          docker rm -vf $(docker ps -aq)
+          docker rmi -f $(docker images -aq)
           docker builder prune -af
           docker system prune -af --volumes
 
