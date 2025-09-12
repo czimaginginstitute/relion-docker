@@ -41,7 +41,7 @@ jobs:
     steps:
       # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
       - name: Maximize build space (#1)
-      - uses: mathio/gha-cleanup@v1
+        uses: mathio/gha-cleanup@v1
         with:
           remove-browsers: true
           verbose: true
