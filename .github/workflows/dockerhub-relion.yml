@@ -155,7 +155,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            RELION_REF=${{ steps.meta.outputs.relion_ref }}
+            RELION_RELEASE=${{ replace(steps.meta.outputs.relion_ref, 'ver', '') }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
             PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
             PYRELION_LOCATION=relion-sub-tomogram-pipelines
