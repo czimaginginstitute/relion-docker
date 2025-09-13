@@ -85,6 +85,7 @@ jobs:
         id: meta
         run: |
           RELION_REF="${{ matrix.relion_ref || env.RELION_REF_DEFAULT }}"
+          echo "RELION_RELEASE=${RELION_REF#ver}" >> $GITHUB_ENV
           CUDA_VERSION="${{ matrix.cuda }}"
           CUDA_MAJOR_MINOR="$(echo "${CUDA_VERSION}" | awk -F. '{print $1"."$2}')"
           TAG_MAIN="${RELION_REF#ver}-cuda${CUDA_MAJOR_MINOR}"
@@ -155,7 +156,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            RELION_RELEASE=${{ replace(steps.meta.outputs.relion_ref, 'ver', '') }}
+            RELION_RELEASE=${{ env.RELION_RELEASE }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
             PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
             PYRELION_LOCATION=relion-sub-tomogram-pipelines
