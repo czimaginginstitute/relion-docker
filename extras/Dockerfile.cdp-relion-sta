@@ -2,7 +2,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_RELEASE=5.0
 ARG CUDA_VERSION=12.8.0
 
-FROM jidaniel/relion:${RELION_RELEASE}-cuda${CUDA_VERSION} AS base
+FROM ghcr.io/czimaginginstitute/relion:${RELION_RELEASE}-cuda${CUDA_VERSION} AS base
 
 ARG PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
 ARG PYRELION_LOCATION=relion-sub-tomogram-pipelines
