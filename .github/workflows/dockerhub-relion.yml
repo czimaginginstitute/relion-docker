@@ -32,10 +32,6 @@ jobs:
             cuda: "12.8.0"
             cuda_arch: "80-real;86-real;89-real;90-real;120-real;120-virtual"
             build_cdp: false
-          - relion_ref: "ver5.1"
-            cuda: "12.4.1"
-            cuda_arch: "80-real;86-real;89-real;90-real;90-virtual"
-            build_cdp: false
           - relion_ref: "ver5.0"
             cuda: "12.8.0"
             cuda_arch: "80"
@@ -186,3 +182,34 @@ jobs:
         run: |
           df -h
           docker system df
+
+  # Convert the pushed images to SIF and publish them to the relion-sif GHCR package.
+  publish-sif:
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # keep in sync with build-push tags (tag_main form)
+        tag: [ "5.1-cuda12.8", "5.0-cuda12.8", "5.0-cuda12.4" ]
+    steps:
+      - name: Use /mnt for Apptainer scratch (more disk)
+        run: |
+          sudo mkdir -p /mnt/aptmp /mnt/apcache
+          sudo chown "$USER" /mnt/aptmp /mnt/apcache
+          echo "APPTAINER_TMPDIR=/mnt/aptmp" >> "$GITHUB_ENV"
+          echo "APPTAINER_CACHEDIR=/mnt/apcache" >> "$GITHUB_ENV"
+
+      - name: Set up Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Log in to GHCR (oras)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | apptainer registry login -u "${{ github.actor }}" --password-stdin oras://ghcr.io
+
+      - name: Convert pushed image to SIF and publish
+        run: |
+          apptainer pull /mnt/relion.sif "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
+          apptainer push /mnt/relion.sif "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
