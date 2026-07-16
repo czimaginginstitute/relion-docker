@@ -3,6 +3,8 @@ FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_REF=ver5.0
+# ver5.1 takes a CMake list (e.g. "80-real;90-real"); ver5.0 a single number. Empty = RELION default.
+ARG CUDA_ARCH=""
 ARG CTFFIND_VER=4.1.14
 ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
 
@@ -45,7 +47,7 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 # Build RELION
 RUN mkdir -p build
 WORKDIR build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
 RUN make -j"$(nproc)"
 RUN make install
 
