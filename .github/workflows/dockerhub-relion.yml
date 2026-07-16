@@ -26,17 +26,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # cuda_arch: ver5.1 takes a CMake list, ver5.0 a single number. build_cdp gates the CDP-STA image.
         include:
-          - cuda: "12.8.0"
-            relion_ref: "ver5.0"
-          - cuda: "12.6.0"
-            relion_ref: "ver5.0"
-          - cuda: "12.4.1"
-            relion_ref: "ver5.0"
-          - cuda: "12.2.0"
-            relion_ref: "ver5.0"
-          - cuda: "11.8.0"
-            relion_ref: "ver5.0"
+          - relion_ref: "ver5.1"
+            cuda: "12.8.0"
+            cuda_arch: "80-real;86-real;89-real;90-real;120-real;120-virtual"
+            build_cdp: false
+          - relion_ref: "ver5.1"
+            cuda: "12.4.1"
+            cuda_arch: "80-real;86-real;89-real;90-real;90-virtual"
+            build_cdp: false
+          - relion_ref: "ver5.0"
+            cuda: "12.8.0"
+            cuda_arch: "80"
+            build_cdp: true
+          - relion_ref: "ver5.0"
+            cuda: "12.4.1"
+            cuda_arch: "80"
+            build_cdp: true
 
     steps:
       # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
@@ -106,6 +113,7 @@ jobs:
           build-args: |
             RELION_REF=${{ steps.meta.outputs.relion_ref }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
+            CUDA_ARCH=${{ matrix.cuda_arch }}
           tags: |
             ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
             ${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
@@ -133,6 +141,7 @@ jobs:
           docker system df
 
       - name: Checkout portal-particle-extraction
+        if: ${{ matrix.build_cdp }}
         uses: actions/checkout@v5
         with:
           repository: czimaginginstitute/portal-particle-extraction
@@ -141,6 +150,7 @@ jobs:
           fetch-depth: 1
 
       - name: Checkout relion-sub-tomogram-pipelines
+        if: ${{ matrix.build_cdp }}
         uses: actions/checkout@v5
         with:
           repository: czimaginginstitute/relion-sub-tomogram-pipelines
@@ -149,6 +159,7 @@ jobs:
           fetch-depth: 1
 
       - name: Build & Push CDP-RELION-STA Image
+        if: ${{ matrix.build_cdp }}
         uses: docker/build-push-action@v6
         with:
           file: extras/Dockerfile.cdp-relion-sta

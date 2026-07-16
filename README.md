@@ -1,20 +1,29 @@
 # relion-docker
 
-Docker images for [RELION 5.0](https://relion.readthedocs.io/en/latest/) with CUDA support. Uses GitHub Actions to automate building and pushing of images to GitHub Container Registry at https://github.com/orgs/czimaginginstitute/packages and DockerHub at https://hub.docker.com/r/jidaniel/relion.
+Docker images for [RELION](https://relion.readthedocs.io/en/latest/) (5.0 and 5.1) with CUDA support. Uses GitHub Actions to automate building and pushing of images to GitHub Container Registry at https://github.com/orgs/czimaginginstitute/packages and DockerHub at https://hub.docker.com/r/jidaniel/relion.
 
 ## Docker images
 
 ### relion
 
-This is the base RELION Docker image, which contains RELION 5.0 with CUDA support and is ready to be run out of the box. It includes all necessary dependencies and is built from an NVIDIA CUDA base image. The Dockerfile sets up the environment for RELION by installing required environments and software packages, including the required conda environment to run RELION, CTFFIND and OpenMPI.
+This is the base RELION Docker image, which contains RELION with CUDA support and is ready to be run out of the box. It includes all necessary dependencies and is built from an NVIDIA CUDA base image. The Dockerfile sets up the environment for RELION by installing required environments and software packages, including the required conda environment to run RELION, CTFFIND and OpenMPI.
+
+Tags follow `<relion>-cuda<cuda>` and are built for the following combinations:
+
+| RELION | CUDA 12.4 | CUDA 12.8 |
+|--------|-----------|-----------|
+| 5.0    | `5.0-cuda12.4` | `5.0-cuda12.8` |
+| 5.1    | `5.1-cuda12.4` | `5.1-cuda12.8` |
+
+CUDA kernels are compiled for the CZ Biohub GPU fleet (Ampere through Blackwell). The `cuda12.8` images emit native code for `sm_80/86/89/90/120`; the `cuda12.4` images cover `sm_80/86/89/90` natively and reach Blackwell via forward-compatible PTX.
 
 The image can be downloaded via: 
 
 ```
-docker pull ghcr.io/czimaginginstitute/relion:5.0-cuda12.8.0
+docker pull ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
 ```
 
-For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion.
+For all tags, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion.
 
 ### cdp-relion-sta
 
