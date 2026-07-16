@@ -56,5 +56,21 @@ In this case, `/path/to/your/data` is a local directory on your host machine, an
 
 The same approach can be used for mounting data in the `cdp-relion-sta` container.
 
+## Apptainer / Singularity (HPC clusters)
+
+Most HPC clusters don't provide Docker. Apptainer (formerly Singularity) can pull and convert these images directly — note it consumes the built image, not the Dockerfile:
+
+```
+apptainer pull docker://ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
+```
+
+This produces `relion_5.1-cuda12.8.sif`. Run with GPU access (`--nv`) and your data bind-mounted:
+
+```
+apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif relion_refine --help
+```
+
+`singularity` accepts the same commands.
+
 ## Roadmap
 - [ ] Add AreTomo3
