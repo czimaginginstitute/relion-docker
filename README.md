@@ -15,7 +15,9 @@ Tags follow `<relion>-cuda<cuda>` and are built for the following combinations:
 | 5.0    | `5.0-cuda12.4` | `5.0-cuda12.8` |
 | 5.1    | `5.1-cuda12.4` | `5.1-cuda12.8` |
 
-CUDA kernels are compiled for the CZ Biohub GPU fleet (Ampere through Blackwell). The `cuda12.8` images emit native code for `sm_80/86/89/90/120`; the `cuda12.4` images cover `sm_80/86/89/90` natively and reach Blackwell via forward-compatible PTX.
+CUDA kernels are compiled for Ampere through Blackwell GPUs. For RELION 5.1, the `cuda12.8` images emit native code for `sm_80/86/89/90/120` and the `cuda12.4` images cover `sm_80/86/89/90` natively (reaching Blackwell via forward-compatible PTX).
+
+RELION 5.0 images are built for a single architecture, `sm_80`, with the rest of the fleet covered by forward-compatible PTX. This is a limitation of RELION 5.0's build system, which uses the older CMake `FindCUDA` and accepts only one `CUDA_ARCH` value; RELION 5.1 switched to `CMAKE_CUDA_ARCHITECTURES`, which takes a list and lets us emit native code for every architecture at once.
 
 The image can be downloaded via: 
 
