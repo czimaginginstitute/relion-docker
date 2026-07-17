@@ -141,6 +141,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: czimaginginstitute/portal-particle-extraction
+          ref: main   # pin ref to skip the flaky "determine default branch" API call
           token: ${{ secrets.GH_TOKEN }}
           path: portal-particle-extraction
           fetch-depth: 1
@@ -150,6 +151,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: czimaginginstitute/relion-sub-tomogram-pipelines
+          ref: main   # pin ref to skip the flaky "determine default branch" API call
           token: ${{ secrets.GH_TOKEN }}
           path: relion-sub-tomogram-pipelines
           fetch-depth: 1
