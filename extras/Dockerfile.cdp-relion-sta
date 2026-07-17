@@ -16,9 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       git build-essential \
       libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 \
  && rm -rf /var/lib/apt/lists/*
-# pyrelion pins slabpick from a now-inaccessible private repo, but only invokes it as an
-# external SLURM command (never imported), so drop the dep to keep the image build working.
-RUN sed -i '/slabpick/d' /opt/relion-sub-tomogram-pipelines/pyproject.toml
+# Fix pyrelion's dependency declarations that uv rejects:
+#  - slabpick: now-inaccessible private repo, only invoked as an external SLURM command (never imported) -> drop it
+#  - pipeliner: declared name "pipeliner" != package's real name "ccpem-pipeliner" -> correct it
+RUN sed -i '/slabpick/d' /opt/relion-sub-tomogram-pipelines/pyproject.toml \
+ && sed -i 's|"pipeliner @ git|"ccpem-pipeliner @ git|' /opt/relion-sub-tomogram-pipelines/pyproject.toml
 USER relion
 
 SHELL ["/bin/bash", "-l", "-c"]
