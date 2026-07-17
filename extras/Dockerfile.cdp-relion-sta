@@ -10,6 +10,14 @@ ARG PYRELION_LOCATION=relion-sub-tomogram-pipelines
 COPY ${PORTAL_PARTICLE_EXTRACTION_LOCATION} /opt/portal-particle-extraction
 COPY ${PYRELION_LOCATION} /opt/relion-sub-tomogram-pipelines
 
+# slim base ships no toolchain/X libs; install what the CDP python tools need to build and import
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git build-essential \
+      libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 \
+ && rm -rf /var/lib/apt/lists/*
+USER relion
+
 SHELL ["/bin/bash", "-l", "-c"]
 RUN micromamba create -n cdp-relion-sta python=3.11 -c conda-forge -y
 SHELL ["micromamba", "run", "-n", "cdp-relion-sta", "/bin/bash", "-l", "-c"]
