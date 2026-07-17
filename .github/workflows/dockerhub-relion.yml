@@ -67,6 +67,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
