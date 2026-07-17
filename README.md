@@ -64,6 +64,12 @@ Most HPC clusters don't provide Docker. Apptainer (formerly Singularity) can pul
 apptainer pull docker://ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
 ```
 
+Pre-built SIFs are also published to the `relion-sif` package and can be pulled directly:
+
+```
+apptainer pull oras://ghcr.io/czimaginginstitute/relion-sif:5.1-cuda12.8
+```
+
 This produces `relion_5.1-cuda12.8.sif`. Run with GPU access (`--nv`) and your data bind-mounted:
 
 ```

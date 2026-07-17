@@ -1,59 +1,75 @@
 ARG CUDA_VERSION=12.8.0
-FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
+
+# ---- build stage (full CUDA toolkit) ----
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04 AS build
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_REF=ver5.0
 # ver5.1 takes a CMake list (e.g. "80-real;90-real"); ver5.0 a single number. Empty = RELION default.
 ARG CUDA_ARCH=""
 ARG CTFFIND_VER=4.1.14
+ARG CTFFIND_SHA256=380209a5283f343cccd6385b8ae425ae79a5f05e1c69eea5f28cae7871bff998
 ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
+ENV MAMBA_ROOT_PREFIX=/root/.local/share/mamba
 
-
-# Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake git pkg-config \
     openmpi-bin libopenmpi-dev \
     libfftw3-dev libtiff-dev libpng-dev \
-    ghostscript pbzip2 xz-utils zstd \
-    ca-certificates \
+    ghostscript pbzip2 xz-utils zstd ca-certificates \
     libfltk1.3-dev libx11-dev libxft-dev libxext-dev libxinerama-dev libxrender-dev \
-    wget curl vim nano \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    wget curl \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install CTFFind
-WORKDIR /opt
-RUN set -eux; \
-  curl -fL "https://grigoriefflab.umassmed.edu/system/tdf?path=ctffind-${CTFFIND_VER}-linux64.tar.gz&file=1" -o /tmp/ctffind.tgz; \
-  mkdir -p "$CTFFIND_HOME"; \
-  tar -xzf /tmp/ctffind.tgz -C "$CTFFIND_HOME"; rm -f /tmp/ctffind.tgz; \
-  install -m 0755 "$CTFFIND_HOME"/bin/* /usr/local/bin/
+# CTFFIND from the vendored tarball (verified by checksum)
+COPY extras/ctffind-${CTFFIND_VER}-linux64.tar.gz /tmp/ctffind.tgz
+RUN echo "${CTFFIND_SHA256}  /tmp/ctffind.tgz" | sha256sum -c - \
+ && mkdir -p "$CTFFIND_HOME" \
+ && tar -xzf /tmp/ctffind.tgz -C "$CTFFIND_HOME" && rm -f /tmp/ctffind.tgz \
+ && install -m 0755 "$CTFFIND_HOME"/bin/* /usr/local/bin/
 
-RUN which ctffind
-
-# Install Micromamba
 RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
     | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
 SHELL ["/bin/bash", "-l", "-c"]
 
-# Clone RELION
 WORKDIR /opt
 RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1
-WORKDIR relion
-RUN git fetch --all --tags && git checkout ${RELION_REF}
-
-# Create Conda environment
+WORKDIR /opt/relion
 RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -a --yes
 
-# Build RELION
-RUN mkdir -p build
-WORKDIR build
+# ensure lib/share exist so the runtime COPY never misses RELION-installed files
+RUN mkdir -p build /usr/local/lib /usr/local/share
+WORKDIR /opt/relion/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
-RUN make -j"$(nproc)"
-RUN make install
+RUN make -j"$(nproc)" && make install
 
+# ---- runtime stage (CUDA runtime libs only) ----
+FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu22.04 AS runtime
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG CTFFIND_VER=4.1.14
+ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
 ENV PATH="/usr/local/bin:${PATH}"
 
-RUN useradd -ms /bin/bash relion && chown -R relion:relion /opt
-USER relion
+# runtime libraries only (GUI=OFF, so no fltk/x11)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openmpi-bin libfftw3-single3 libfftw3-double3 \
+    libtiff5 libpng16-16 ghostscript libgomp1 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -ms /bin/bash relion
+
+# RELION install, ctffind, micromamba + the conda env (kept at its original path)
+COPY --from=build --chown=relion:relion /usr/local/bin/ /usr/local/bin/
+COPY --from=build --chown=relion:relion /usr/local/lib/ /usr/local/lib/
+COPY --from=build --chown=relion:relion /usr/local/share/ /usr/local/share/
+COPY --from=build --chown=relion:relion ${CTFFIND_HOME}/ ${CTFFIND_HOME}/
+COPY --from=build --chown=relion:relion /root/.local/share/mamba /root/.local/share/mamba
+
+# fail the build if a runtime library is missing or RELION can't run
+RUN ldd /usr/local/bin/relion_refine | grep -q "not found" \
+    && { echo "ERROR: missing runtime libraries"; ldd /usr/local/bin/relion_refine | grep "not found"; exit 1; } \
+    || relion_refine --version
+
+USER relion
 WORKDIR /work
