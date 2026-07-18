@@ -80,3 +80,22 @@ apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif reli
 
 ## Roadmap
 - [ ] Add AreTomo3
+
+## Known issues
+
+### `cdp-relion-sta` build is currently broken (blocked upstream in pyrelion)
+
+The `cryoet-data-portal-relion-sta` image (built only on merge to `main`, published only to GHCR — never Docker Hub) does not build. The base `relion` images are unaffected. **Fix this only if/when the CDP-STA image is needed.**
+
+Root cause is in [pyrelion / relion-sub-tomogram-pipelines](https://github.com/czimaginginstitute/relion-sub-tomogram-pipelines), not this repo. Its `pyproject.toml`:
+- pins `pipeliner @ git+…/ccpem-pipeliner.git@main` — a **moving ref** that has since advanced to `ccpem-pipeliner==1.6.0`, which requires `scipy>=1.13.1`, while pyrelion pins `scipy>=1.9.3,<1.10.0` → **unsatisfiable version conflict**;
+- declares the dep as `pipeliner`, but the package's real name is `ccpem-pipeliner`;
+- pins `slabpick @ git+https://github.com/jtschwar/slabpick.git@main`, a now-inaccessible (private/deleted) repo.
+
+**Proper fix (in pyrelion):** pin `pipeliner` to a commit compatible with pyrelion's `scipy` range (or bump/verify `scipy`), correct the `pipeliner` dep name to `ccpem-pipeliner`, and drop or make optional the `slabpick` dep. Once pyrelion is fixed, remove the temporary band-aids below.
+
+**Temporary band-aids in `extras/Dockerfile.cdp-relion-sta` — REMOVE after pyrelion is fixed** (these rewrite pyrelion's `pyproject.toml` at build time and do *not* resolve the `scipy` conflict, so CDP-STA stays broken until pyrelion is fixed):
+- `sed` that drops the `slabpick` dependency (it is only invoked as an external SLURM command, never imported).
+- `sed` that renames `pipeliner` → `ccpem-pipeliner`.
+
+Note: the `apt-get install git build-essential libgl1 …` step in that same Dockerfile is **not** a pyrelion band-aid — it is required because the slimmed runtime base no longer ships a toolchain/X libs, and should stay.

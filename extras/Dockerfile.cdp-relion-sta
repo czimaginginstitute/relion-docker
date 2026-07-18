@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       git build-essential \
       libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 \
  && rm -rf /var/lib/apt/lists/*
-# Fix pyrelion's dependency declarations that uv rejects:
+# TEMPORARY band-aids over pyrelion's pyproject.toml (see README "Known issues"); remove once
+# pyrelion is fixed upstream. NOTE: these do not fix the pipeliner<->scipy version conflict, so
+# the CDP-STA build stays broken regardless.
 #  - slabpick: now-inaccessible private repo, only invoked as an external SLURM command (never imported) -> drop it
 #  - pipeliner: declared name "pipeliner" != package's real name "ccpem-pipeliner" -> correct it
 RUN sed -i '/slabpick/d' /opt/relion-sub-tomogram-pipelines/pyproject.toml \
