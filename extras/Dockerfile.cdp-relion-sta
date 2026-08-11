@@ -4,42 +4,25 @@ ARG CUDA_VERSION=12.8.0
 
 FROM ghcr.io/czimaginginstitute/relion:${RELION_RELEASE}-cuda${CUDA_VERSION} AS base
 
-ARG PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
-ARG PYRELION_LOCATION=relion-sub-tomogram-pipelines
-
-COPY ${PORTAL_PARTICLE_EXTRACTION_LOCATION} /opt/portal-particle-extraction
-COPY ${PYRELION_LOCATION} /opt/relion-sub-tomogram-pipelines
-
-# slim base ships no toolchain/X libs; install what the CDP python tools need to build and import
+# slim base ships no toolchain; install what py2rely/zarr-particle-tools need to build and import
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      git build-essential \
-      libgl1 libglib2.0-0 libx11-6 libxext6 libxrender1 \
+      build-essential \
  && rm -rf /var/lib/apt/lists/*
-# TEMPORARY band-aids over pyrelion's pyproject.toml (see README "Known issues"); remove once
-# pyrelion is fixed upstream. NOTE: these do not fix the pipeliner<->scipy version conflict, so
-# the CDP-STA build stays broken regardless.
-#  - slabpick: now-inaccessible private repo, only invoked as an external SLURM command (never imported) -> drop it
-#  - pipeliner: declared name "pipeliner" != package's real name "ccpem-pipeliner" -> correct it
-RUN sed -i '/slabpick/d' /opt/relion-sub-tomogram-pipelines/pyproject.toml \
- && sed -i 's|"pipeliner @ git|"ccpem-pipeliner @ git|' /opt/relion-sub-tomogram-pipelines/pyproject.toml
 USER relion
+
+# Apptainer overrides $HOME to the invoking host user's home dir by default, which would break
+# micromamba's default ~/.local/share/mamba prefix lookup at runtime; pin it explicitly instead.
+ENV MAMBA_ROOT_PREFIX=/home/relion/.local/share/mamba
 
 SHELL ["/bin/bash", "-l", "-c"]
 RUN micromamba create -n cdp-relion-sta python=3.11 -c conda-forge -y
 SHELL ["micromamba", "run", "-n", "cdp-relion-sta", "/bin/bash", "-l", "-c"]
 
 RUN pip install uv
-RUN uv pip install /opt/relion-sub-tomogram-pipelines
-RUN uv pip install /opt/portal-particle-extraction
-RUN uv pip install octopi
+RUN uv pip install py2rely zarr-particle-tools
 WORKDIR /
-USER root
-RUN ["/bin/sh", "-c", "rm -rf /opt/relion-sub-tomogram-pipelines"]
-RUN ["/bin/sh", "-c", "rm -rf /opt/portal-particle-extraction"]
-USER relion
 RUN pip cache purge
 RUN micromamba clean -afy
-RUN portal-particle-extraction --help
-RUN pyrelion --help
-RUN octopi --help
+RUN zarr-particle-pipeline --help
+RUN py2rely --help
