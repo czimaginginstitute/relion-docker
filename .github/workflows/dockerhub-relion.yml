@@ -72,6 +72,16 @@ jobs:
         with:
           lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
+      - name: Check for CDP-STA-relevant changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            cdp:
+              - 'extras/Dockerfile.cdp-relion-sta'
+              - 'Dockerfile.relion'
+              - '.github/workflows/dockerhub-relion.yml'
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -142,39 +152,19 @@ jobs:
           df -h
           docker system df
 
-      - name: Checkout portal-particle-extraction
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/portal-particle-extraction
-          ref: main   # pin ref to skip the flaky "determine default branch" API call
-          token: ${{ secrets.GH_TOKEN }}
-          path: portal-particle-extraction
-          fetch-depth: 1
-
-      - name: Checkout relion-sub-tomogram-pipelines
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/relion-sub-tomogram-pipelines
-          ref: main   # pin ref to skip the flaky "determine default branch" API call
-          token: ${{ secrets.GH_TOKEN }}
-          path: relion-sub-tomogram-pipelines
-          fetch-depth: 1
-
       - name: Build & Push CDP-RELION-STA Image
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
+        # Push only on merge to main; build (no push) on PRs that touch CDP-STA-relevant files so
+        # breakage is caught before merge without paying the extra build cost on every PR.
+        if: ${{ matrix.build_cdp && (github.event_name != 'pull_request' || steps.filter.outputs.cdp == 'true') }}
         uses: docker/build-push-action@v6
         with:
           file: extras/Dockerfile.cdp-relion-sta
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64
           build-args: |
             RELION_RELEASE=${{ env.RELION_RELEASE }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
-            PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
-            PYRELION_LOCATION=relion-sub-tomogram-pipelines
           tags: |
             ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
             ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
