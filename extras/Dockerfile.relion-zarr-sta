@@ -16,8 +16,8 @@ USER relion
 ENV MAMBA_ROOT_PREFIX=/home/relion/.local/share/mamba
 
 SHELL ["/bin/bash", "-l", "-c"]
-RUN micromamba create -n cdp-relion-sta python=3.11 -c conda-forge -y
-SHELL ["micromamba", "run", "-n", "cdp-relion-sta", "/bin/bash", "-l", "-c"]
+RUN micromamba create -n relion-zarr-sta python=3.11 -c conda-forge -y
+SHELL ["micromamba", "run", "-n", "relion-zarr-sta", "/bin/bash", "-l", "-c"]
 
 RUN pip install uv
 RUN uv pip install py2rely zarr-particle-tools

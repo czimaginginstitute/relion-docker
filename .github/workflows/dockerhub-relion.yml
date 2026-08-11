@@ -14,9 +14,8 @@ concurrency:
 env:
   RELION_REF_DEFAULT: ver5.0
   DOCKERHUB_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
-  DOCKERHUB_CDP_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cryoet-data-portal-relion-sta
   GHCR_RELION_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion
-  GHCR_CDP_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/cryoet-data-portal-relion-sta
+  GHCR_RELION_ZARR_STA_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion-zarr-sta
 
 jobs:
   build-push:
@@ -28,20 +27,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # cuda_arch: ver5.1 takes a CMake list, ver5.0 a single number. build_cdp gates the CDP-STA image.
+        # cuda_arch: ver5.1 takes a CMake list, ver5.0 a single number. build_relion_zarr_sta gates
+        # the relion-zarr-sta image.
         include:
           - relion_ref: "ver5.1"
             cuda: "12.8.0"
             cuda_arch: "80-real;86-real;89-real;90-real;120-real;120-virtual"
-            build_cdp: false
+            build_relion_zarr_sta: false
           - relion_ref: "ver5.0"
             cuda: "12.8.0"
             cuda_arch: "80"
-            build_cdp: true
+            build_relion_zarr_sta: true
           - relion_ref: "ver5.0"
             cuda: "12.4.1"
             cuda_arch: "80"
-            build_cdp: true
+            build_relion_zarr_sta: true
 
     steps:
       # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
@@ -72,13 +72,13 @@ jobs:
         with:
           lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
-      - name: Check for CDP-STA-relevant changes
+      - name: Check for relion-zarr-sta-relevant changes
         id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            cdp:
-              - 'extras/Dockerfile.cdp-relion-sta'
+            relion_zarr_sta:
+              - 'extras/Dockerfile.relion-zarr-sta'
               - 'Dockerfile.relion'
               - '.github/workflows/dockerhub-relion.yml'
 
@@ -152,13 +152,13 @@ jobs:
           df -h
           docker system df
 
-      - name: Build & Push CDP-RELION-STA Image
-        # Push only on merge to main; build (no push) on PRs that touch CDP-STA-relevant files so
-        # breakage is caught before merge without paying the extra build cost on every PR.
-        if: ${{ matrix.build_cdp && (github.event_name != 'pull_request' || steps.filter.outputs.cdp == 'true') }}
+      - name: Build & Push RELION-Zarr-STA Image
+        # Push only on merge to main; build (no push) on PRs that touch relion-zarr-sta-relevant
+        # files so breakage is caught before merge without paying the extra build cost on every PR.
+        if: ${{ matrix.build_relion_zarr_sta && (github.event_name != 'pull_request' || steps.filter.outputs.relion_zarr_sta == 'true') }}
         uses: docker/build-push-action@v6
         with:
-          file: extras/Dockerfile.cdp-relion-sta
+          file: extras/Dockerfile.relion-zarr-sta
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64
@@ -166,11 +166,11 @@ jobs:
             RELION_RELEASE=${{ env.RELION_RELEASE }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
           tags: |
-            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
-            org.opencontainers.image.title=cryoet-data-portal-relion-sta
-            org.opencontainers.image.description=RELION with CryoET Data Portal STA pipeline tools, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
+            org.opencontainers.image.title=relion-zarr-sta
+            org.opencontainers.image.description=RELION with zarr-particle-tools and py2rely for CryoET Data Portal STA workflows, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha

@@ -27,19 +27,19 @@ docker pull ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
 
 For all tags, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion.
 
-### cdp-relion-sta
+### relion-zarr-sta
 
-This Docker image is a derived image from the base RELION image, designed for running Subtomogram Averaging (STA) from the CryoET Data Portal (CDP). It includes the additional Python tools for CDP RELION STA workflows:
+This Docker image is a derived image from the base RELION image, designed for running Subtomogram Averaging (STA) with Zarr/S3-streamed tilt series, including data from the CryoET Data Portal (CDP). It includes the additional Python tools for these STA workflows:
 - [py2rely](https://github.com/chanzuckerberg/py2rely): A Pythonic interface for automated RELION workflows for subtomogram averaging on SLURM HPC clusters.
 - [zarr-particle-tools](https://github.com/czimaginginstitute/zarr-particle-tools): Subtomogram extraction, reconstruction, CTF refinement, and Bayesian polishing for local files and the CryoET Data Portal.
 
 The image can be downloaded via: 
 
 ```
-docker pull ghcr.io/czimaginginstitute/cryoet-data-portal-relion-sta:5.0-cuda12.8.0
+docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
 ```
 
-For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/cryoet-data-portal-relion-sta.
+For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion-zarr-sta.
 
 ## Mounting Data
 
@@ -53,7 +53,7 @@ docker run --gpus all -it --rm -v /path/to/your/data:/work jidaniel/relion:5.0-c
 
 In this case, `/path/to/your/data` is a local directory on your host machine, and `/work` is the directory inside the container where the data will be available.
 
-The same approach can be used for mounting data in the `cdp-relion-sta` container.
+The same approach can be used for mounting data in the `relion-zarr-sta` container.
 
 ## Apptainer / Singularity (HPC clusters)
 
