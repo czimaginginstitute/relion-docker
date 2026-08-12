@@ -198,6 +198,20 @@ jobs:
         # keep in sync with build-push tags (tag_main form)
         tag: [ "5.1-cuda12.8", "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
+      # relion carries a full PyTorch/napari/cuDNN/NCCL conda env (needed at runtime for
+      # RELION 5's blush/classranker/topaz/tomo-view Python features - not removable bloat),
+      # so unpacking it for SIF conversion needs real headroom. This job previously never ran
+      # to completion (build-push always failed first), so this is the first time it's had a
+      # chance to hit its own disk limit - mirror build-push's cleanup to give it room.
+      - name: Maximize build space
+        uses: mathio/gha-cleanup@v1
+        with:
+          remove-browsers: true
+          verbose: true
+
+      - name: Show disk space (start)
+        run: df -h
+
       - name: Use /mnt for Apptainer scratch (more disk)
         run: |
           sudo mkdir -p /mnt/aptmp /mnt/apcache
@@ -215,3 +229,7 @@ jobs:
         run: |
           apptainer pull /mnt/relion.sif "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
           apptainer push /mnt/relion.sif "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
+
+      - name: Show disk space (end)
+        if: always()
+        run: df -h
