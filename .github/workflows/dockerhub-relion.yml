@@ -23,7 +23,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      pull-requests: read   # dorny/paths-filter needs this to list a PR's changed files via the API
+      pull-requests: read   # needed by dorny/paths-filter
 
     strategy:
       fail-fast: false
@@ -94,8 +94,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Log in to GitHub Container Registry
-        # Also needed on PRs that will attempt the relion-zarr-sta build: it's FROM'd on the
-        # private ghcr.io/czimaginginstitute/relion base image, which fails to pull anonymously.
+        # also needed on PRs: relion-zarr-sta builds FROM the private ghcr.io/.../relion image
         if: ${{ github.event_name != 'pull_request' || steps.filter.outputs.relion_zarr_sta == 'true' }}
         uses: docker/login-action@v3
         with:
@@ -156,8 +155,7 @@ jobs:
           docker system df
 
       - name: Build & Push RELION-Zarr-STA Image
-        # Push only on merge to main; build (no push) on PRs that touch relion-zarr-sta-relevant
-        # files so breakage is caught before merge without paying the extra build cost on every PR.
+        # push only on merge to main; build-only on PRs touching relevant files
         if: ${{ matrix.build_relion_zarr_sta && (github.event_name != 'pull_request' || steps.filter.outputs.relion_zarr_sta == 'true') }}
         uses: docker/build-push-action@v6
         with:
@@ -198,11 +196,8 @@ jobs:
         # keep in sync with build-push tags (tag_main form)
         tag: [ "5.1-cuda12.8", "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
-      # relion carries a full PyTorch/napari/cuDNN/NCCL conda env (needed at runtime for
-      # RELION 5's blush/classranker/topaz/tomo-view Python features - not removable bloat),
-      # so unpacking it for SIF conversion needs real headroom. This job previously never ran
-      # to completion (build-push always failed first), so this is the first time it's had a
-      # chance to hit its own disk limit - mirror build-push's cleanup to give it room.
+      # relion's conda env (PyTorch/napari/cuDNN/NCCL, used by blush/classranker/topaz/tomo-view)
+      # is large and not removable; unpacking it for SIF conversion needs real headroom.
       - name: Maximize build space
         uses: mathio/gha-cleanup@v1
         with:
@@ -213,10 +208,8 @@ jobs:
         run: df -h
 
       - name: Use $RUNNER_TEMP for Apptainer scratch
-        # /mnt isn't actually a separate disk on this runner (df confirms it's on the same root
-        # filesystem), and apptainer also writes temp files directly alongside the .sif's own
-        # directory (not just inside TMPDIR/CACHEDIR) - a root-owned /mnt breaks that regardless
-        # of chown'ing the subdirectories. $RUNNER_TEMP is already writable end-to-end.
+        # apptainer writes temp files directly next to the .sif, not just under TMPDIR/CACHEDIR,
+        # so everything needs to live under one dir that's writable end-to-end
         run: |
           mkdir -p "$RUNNER_TEMP/aptmp" "$RUNNER_TEMP/apcache"
           echo "APPTAINER_TMPDIR=$RUNNER_TEMP/aptmp" >> "$GITHUB_ENV"
