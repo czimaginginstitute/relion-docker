@@ -14,9 +14,8 @@ concurrency:
 env:
   RELION_REF_DEFAULT: ver5.0
   DOCKERHUB_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
-  DOCKERHUB_CDP_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cryoet-data-portal-relion-sta
   GHCR_RELION_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion
-  GHCR_CDP_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/cryoet-data-portal-relion-sta
+  GHCR_RELION_ZARR_STA_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion-zarr-sta
 
 jobs:
   build-push:
@@ -24,24 +23,26 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: read   # dorny/paths-filter needs this to list a PR's changed files via the API
 
     strategy:
       fail-fast: false
       matrix:
-        # cuda_arch: ver5.1 takes a CMake list, ver5.0 a single number. build_cdp gates the CDP-STA image.
+        # cuda_arch: ver5.1 takes a CMake list, ver5.0 a single number. build_relion_zarr_sta gates
+        # the relion-zarr-sta image.
         include:
           - relion_ref: "ver5.1"
             cuda: "12.8.0"
             cuda_arch: "80-real;86-real;89-real;90-real;120-real;120-virtual"
-            build_cdp: false
+            build_relion_zarr_sta: false
           - relion_ref: "ver5.0"
             cuda: "12.8.0"
             cuda_arch: "80"
-            build_cdp: true
+            build_relion_zarr_sta: true
           - relion_ref: "ver5.0"
             cuda: "12.4.1"
             cuda_arch: "80"
-            build_cdp: true
+            build_relion_zarr_sta: true
 
     steps:
       # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
@@ -72,6 +73,16 @@ jobs:
         with:
           lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
+      - name: Check for relion-zarr-sta-relevant changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relion_zarr_sta:
+              - 'extras/Dockerfile.relion-zarr-sta'
+              - 'Dockerfile.relion'
+              - '.github/workflows/dockerhub-relion.yml'
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -83,7 +94,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+        # Also needed on PRs that will attempt the relion-zarr-sta build: it's FROM'd on the
+        # private ghcr.io/czimaginginstitute/relion base image, which fails to pull anonymously.
+        if: ${{ github.event_name != 'pull_request' || steps.filter.outputs.relion_zarr_sta == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -142,45 +155,25 @@ jobs:
           df -h
           docker system df
 
-      - name: Checkout portal-particle-extraction
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/portal-particle-extraction
-          ref: main   # pin ref to skip the flaky "determine default branch" API call
-          token: ${{ secrets.GH_TOKEN }}
-          path: portal-particle-extraction
-          fetch-depth: 1
-
-      - name: Checkout relion-sub-tomogram-pipelines
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
-        uses: actions/checkout@v5
-        with:
-          repository: czimaginginstitute/relion-sub-tomogram-pipelines
-          ref: main   # pin ref to skip the flaky "determine default branch" API call
-          token: ${{ secrets.GH_TOKEN }}
-          path: relion-sub-tomogram-pipelines
-          fetch-depth: 1
-
-      - name: Build & Push CDP-RELION-STA Image
-        if: ${{ matrix.build_cdp && github.event_name != 'pull_request' }}
+      - name: Build & Push RELION-Zarr-STA Image
+        # Push only on merge to main; build (no push) on PRs that touch relion-zarr-sta-relevant
+        # files so breakage is caught before merge without paying the extra build cost on every PR.
+        if: ${{ matrix.build_relion_zarr_sta && (github.event_name != 'pull_request' || steps.filter.outputs.relion_zarr_sta == 'true') }}
         uses: docker/build-push-action@v6
         with:
-          file: extras/Dockerfile.cdp-relion-sta
+          file: extras/Dockerfile.relion-zarr-sta
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64
           build-args: |
             RELION_RELEASE=${{ env.RELION_RELEASE }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
-            PORTAL_PARTICLE_EXTRACTION_LOCATION=portal-particle-extraction
-            PYRELION_LOCATION=relion-sub-tomogram-pipelines
           tags: |
-            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
-            ${{ env.GHCR_CDP_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
+            ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
-            org.opencontainers.image.title=cryoet-data-portal-relion-sta
-            org.opencontainers.image.description=RELION with CryoET Data Portal STA pipeline tools, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
+            org.opencontainers.image.title=relion-zarr-sta
+            org.opencontainers.image.description=RELION with zarr-particle-tools and py2rely for CryoET Data Portal STA workflows, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
