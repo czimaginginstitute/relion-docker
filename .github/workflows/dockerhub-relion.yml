@@ -23,6 +23,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: read   # dorny/paths-filter needs this to list a PR's changed files via the API
 
     strategy:
       fail-fast: false
