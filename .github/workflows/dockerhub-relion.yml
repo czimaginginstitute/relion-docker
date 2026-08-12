@@ -212,12 +212,16 @@ jobs:
       - name: Show disk space (start)
         run: df -h
 
-      - name: Use /mnt for Apptainer scratch (more disk)
+      - name: Use $RUNNER_TEMP for Apptainer scratch
+        # /mnt isn't actually a separate disk on this runner (df confirms it's on the same root
+        # filesystem), and apptainer also writes temp files directly alongside the .sif's own
+        # directory (not just inside TMPDIR/CACHEDIR) - a root-owned /mnt breaks that regardless
+        # of chown'ing the subdirectories. $RUNNER_TEMP is already writable end-to-end.
         run: |
-          sudo mkdir -p /mnt/aptmp /mnt/apcache
-          sudo chown "$USER" /mnt/aptmp /mnt/apcache
-          echo "APPTAINER_TMPDIR=/mnt/aptmp" >> "$GITHUB_ENV"
-          echo "APPTAINER_CACHEDIR=/mnt/apcache" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/aptmp" "$RUNNER_TEMP/apcache"
+          echo "APPTAINER_TMPDIR=$RUNNER_TEMP/aptmp" >> "$GITHUB_ENV"
+          echo "APPTAINER_CACHEDIR=$RUNNER_TEMP/apcache" >> "$GITHUB_ENV"
+          echo "SIF_PATH=$RUNNER_TEMP/relion.sif" >> "$GITHUB_ENV"
 
       - name: Set up Apptainer
         uses: eWaterCycle/setup-apptainer@v2
@@ -227,8 +231,8 @@ jobs:
 
       - name: Convert pushed image to SIF and publish
         run: |
-          apptainer pull /mnt/relion.sif "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
-          apptainer push /mnt/relion.sif "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
+          apptainer pull "$SIF_PATH" "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
+          apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
 
       - name: Show disk space (end)
         if: always()
