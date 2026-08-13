@@ -77,5 +77,18 @@ apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif reli
 
 `singularity` accepts the same commands.
 
+`relion-zarr-sta` SIFs are published the same way, under `relion-zarr-sta-sif`:
+
+```
+apptainer pull oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
+```
+
+### SLURM integration
+
+[`shims/`](shims/) generates PATH wrapper scripts so SLURM job scripts and
+tools like py2rely that expect a native RELION/py2rely install work
+unmodified against a `relion-zarr-sta` SIF, with no `apptainer exec` typed
+anywhere in the calling code. See [`shims/README.md`](shims/README.md).
+
 ## Roadmap
 - [ ] Add AreTomo3

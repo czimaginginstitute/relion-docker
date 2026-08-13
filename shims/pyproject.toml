@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "relion-docker-shims"
+version = "0.1.0"
+description = "Generate PATH shims that transparently route native command invocations through apptainer exec into a relion-docker image"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+[project.scripts]
+relion-docker-shims = "relion_docker_shims.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/relion_docker_shims"]
