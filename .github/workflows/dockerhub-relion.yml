@@ -45,7 +45,6 @@ jobs:
             build_relion_zarr_sta: true
 
     steps:
-      # Note: these maximize build space steps may overlap in functionality, but trying to remove as much as we can
       - name: Maximize build space (#1)
         uses: mathio/gha-cleanup@v1
         with:
@@ -226,6 +225,51 @@ jobs:
         run: |
           apptainer pull "$SIF_PATH" "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
           apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
+
+      - name: Show disk space (end)
+        if: always()
+        run: df -h
+
+  # Same as publish-sif, but for relion-zarr-sta (GHCR-only source, own SIF package).
+  publish-relion-zarr-sta-sif:
+    needs: build-push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # only ver5.0 builds relion-zarr-sta (see build-push's matrix)
+        tag: [ "5.0-cuda12.8", "5.0-cuda12.4" ]
+    steps:
+      - name: Maximize build space
+        uses: mathio/gha-cleanup@v1
+        with:
+          remove-browsers: true
+          verbose: true
+
+      - name: Show disk space (start)
+        run: df -h
+
+      - name: Use $RUNNER_TEMP for Apptainer scratch
+        run: |
+          mkdir -p "$RUNNER_TEMP/aptmp" "$RUNNER_TEMP/apcache"
+          echo "APPTAINER_TMPDIR=$RUNNER_TEMP/aptmp" >> "$GITHUB_ENV"
+          echo "APPTAINER_CACHEDIR=$RUNNER_TEMP/apcache" >> "$GITHUB_ENV"
+          echo "SIF_PATH=$RUNNER_TEMP/relion-zarr-sta.sif" >> "$GITHUB_ENV"
+
+      - name: Set up Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Log in to GHCR (oras)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | apptainer registry login -u "${{ github.actor }}" --password-stdin oras://ghcr.io
+
+      - name: Convert pushed image to SIF and publish
+        run: |
+          apptainer pull "$SIF_PATH" "docker://${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ matrix.tag }}"
+          apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-zarr-sta-sif:${{ matrix.tag }}"
 
       - name: Show disk space (end)
         if: always()
