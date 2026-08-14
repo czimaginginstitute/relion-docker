@@ -6,6 +6,8 @@ workflows. Images are published to [GitHub Container
 Registry](https://github.com/orgs/czimaginginstitute/packages) and [Docker
 Hub](https://hub.docker.com/r/jidaniel/relion).
 
+This project is under active development.
+
 ## Quickstart: run relion-zarr-sta on your HPC cluster
 
 Most HPC clusters don't provide Docker (no root access) — use Apptainer instead.
@@ -93,3 +95,17 @@ This Docker image is a derived image from the base RELION image, designed for ru
 - [zarr-particle-tools](https://github.com/czimaginginstitute/zarr-particle-tools): Subtomogram extraction, reconstruction, CTF refinement, and Bayesian polishing for local files and the CryoET Data Portal.
 
 For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion-zarr-sta.
+
+## Licensing
+
+relion-docker's own code is licensed under [MIT](LICENSE.md). The built images bundle
+third-party software (RELION, CTFFIND, and others) under their own upstream licenses — see
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
+## Code of Conduct
+
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [opensource@biohub.org](mailto:opensource@biohub.org).
+
+## Reporting Security Issues
+
+If you believe you have found a security issue, please responsibly disclose by contacting us at [security@biohub.org](mailto:security@biohub.org).

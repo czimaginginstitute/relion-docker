@@ -67,8 +67,10 @@ def main() -> None:
     )
     parser.add_argument(
         "--bind",
-        default="/hpc/projects/group.czii",
-        help="bind path passed to apptainer exec (default: %(default)s)",
+        default="/data",
+        help="bind path passed to apptainer exec, mounted at the same path inside the "
+        "container (default: %(default)s) -- set this to whatever shared storage path "
+        "your data and SIF actually live under",
     )
     parser.add_argument(
         "--env-name",

@@ -31,5 +31,5 @@ relion-docker-shims --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py
 
 ## Options
 
-- `--bind PATH` — bind-mounted into the container (default: `/hpc/projects/group.czii`); set this to whatever shared storage path your data and SIF actually live under.
+- `--bind PATH` — bind-mounted into the container at the same path (default: `/data`); set this to whatever shared storage path your data and SIF actually live under.
 - `--env-name NAME` — micromamba env name inside the image for env-only CLIs like `py2rely` (default: `relion-zarr-sta`).
