@@ -19,9 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This license covers relion-docker's own code (Dockerfiles, CI configuration, and the `shims/`
-tool). It does not cover the third-party software built into the resulting images — see
-[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
