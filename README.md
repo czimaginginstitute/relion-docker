@@ -1,8 +1,75 @@
 # relion-docker
 
-Docker images for [RELION](https://relion.readthedocs.io/en/latest/) (5.0 and 5.1) with CUDA support. Uses GitHub Actions to automate building and pushing of images to GitHub Container Registry at https://github.com/orgs/czimaginginstitute/packages and DockerHub at https://hub.docker.com/r/jidaniel/relion.
+Ready-to-run RELION 5 images (with CUDA support) for Docker and Apptainer/HPC, including
+`relion-zarr-sta`, a Subtomogram Averaging (STA) variant for CryoET Data Portal / SLURM
+workflows. Images are published to [GitHub Container
+Registry](https://github.com/orgs/czimaginginstitute/packages) and [Docker
+Hub](https://hub.docker.com/r/jidaniel/relion).
 
-## Docker images
+This project is under active development.
+
+## Quickstart: run relion-zarr-sta on your HPC cluster
+
+Most HPC clusters don't provide Docker (no root access) — use Apptainer instead.
+
+1. Pull the pre-built SIF:
+
+   ```
+   apptainer pull relion-zarr-sta.sif oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
+   ```
+
+2. Install the shim tool and wire it into py2rely (so SLURM job scripts and py2rely, which
+   expect a native install, work unmodified against the container):
+
+   ```
+   pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=shims
+   relion-docker-shims --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py2rely
+   ```
+
+That's it — py2rely's SLURM job scripts now transparently run inside the container. See
+[`shims/README.md`](shims/README.md) for options.
+
+## Running locally with Docker
+
+```
+docker pull ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
+docker run --gpus all -it --rm -v /path/to/your/data:/work ghcr.io/czimaginginstitute/relion:5.1-cuda12.8 /bin/bash
+```
+
+`-v /path/to/your/data:/work` bind-mounts a local directory into the container at `/work`. The
+same applies to `relion-zarr-sta`:
+
+```
+docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
+```
+
+## Apptainer reference
+
+Apptainer (formerly Singularity — `singularity` accepts the same commands) can pull and convert
+these images directly. Note it consumes the built image, not the Dockerfile:
+
+```
+apptainer pull docker://ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
+```
+
+Pre-built SIFs are also published directly, under `relion-sif` and `relion-zarr-sta-sif`:
+
+```
+apptainer pull oras://ghcr.io/czimaginginstitute/relion-sif:5.1-cuda12.8
+apptainer pull oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
+```
+
+Run with GPU access (`--nv`) and your data bind-mounted:
+
+```
+apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif relion_refine --help
+```
+
+For `relion-zarr-sta` on a SLURM cluster, see the
+[Quickstart](#quickstart-run-relion-zarr-sta-on-your-hpc-cluster) above for the shim-based
+integration.
+
+## Image reference
 
 ### relion
 
@@ -19,12 +86,6 @@ CUDA kernels are compiled for Ampere through Blackwell GPUs. For RELION 5.1, the
 
 RELION 5.0 images are built for a single architecture, `sm_80`, with the rest of the fleet covered by forward-compatible PTX. This is a limitation of RELION 5.0's build system, which uses the older CMake `FindCUDA` and accepts only one `CUDA_ARCH` value; RELION 5.1 switched to `CMAKE_CUDA_ARCHITECTURES`, which takes a list and lets us emit native code for every architecture at once.
 
-The image can be downloaded via: 
-
-```
-docker pull ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
-```
-
 For all tags, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion.
 
 ### relion-zarr-sta
@@ -33,62 +94,18 @@ This Docker image is a derived image from the base RELION image, designed for ru
 - [py2rely](https://github.com/chanzuckerberg/py2rely): A Pythonic interface for automated RELION workflows for subtomogram averaging on SLURM HPC clusters.
 - [zarr-particle-tools](https://github.com/czimaginginstitute/zarr-particle-tools): Subtomogram extraction, reconstruction, CTF refinement, and Bayesian polishing for local files and the CryoET Data Portal.
 
-The image can be downloaded via: 
-
-```
-docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
-```
-
 For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion-zarr-sta.
 
-## Mounting Data
+## Licensing
 
-When running Docker containers with RELION, it is often necessary to mount local directories to the container so that data can be accessed and processed. You can mount data by using the `-v` option when running the container. This allows you to specify a local directory to mount to a specific directory inside the container.
+relion-docker's own code is licensed under [MIT](LICENSE.md). The built images bundle
+third-party software (RELION, CTFFIND, and others) under their own upstream licenses — see
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
-For example:
+## Code of Conduct
 
-```
-docker run --gpus all -it --rm -v /path/to/your/data:/work jidaniel/relion:5.0-cuda12.8 /bin/bash
-```
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [opensource@biohub.org](mailto:opensource@biohub.org).
 
-In this case, `/path/to/your/data` is a local directory on your host machine, and `/work` is the directory inside the container where the data will be available.
+## Reporting Security Issues
 
-The same approach can be used for mounting data in the `relion-zarr-sta` container.
-
-## Apptainer / Singularity (HPC clusters)
-
-Most HPC clusters don't provide Docker. Apptainer (formerly Singularity) can pull and convert these images directly — note it consumes the built image, not the Dockerfile:
-
-```
-apptainer pull docker://ghcr.io/czimaginginstitute/relion:5.1-cuda12.8
-```
-
-Pre-built SIFs are also published to the `relion-sif` package and can be pulled directly:
-
-```
-apptainer pull oras://ghcr.io/czimaginginstitute/relion-sif:5.1-cuda12.8
-```
-
-This produces `relion_5.1-cuda12.8.sif`. Run with GPU access (`--nv`) and your data bind-mounted:
-
-```
-apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif relion_refine --help
-```
-
-`singularity` accepts the same commands.
-
-`relion-zarr-sta` SIFs are published the same way, under `relion-zarr-sta-sif`:
-
-```
-apptainer pull oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
-```
-
-### SLURM integration
-
-[`shims/`](shims/) generates PATH wrapper scripts so SLURM job scripts and
-tools like py2rely that expect a native RELION/py2rely install work
-unmodified against a `relion-zarr-sta` SIF, with no `apptainer exec` typed
-anywhere in the calling code. See [`shims/README.md`](shims/README.md).
-
-## Roadmap
-- [ ] Add AreTomo3
+If you believe you have found a security issue, please responsibly disclose by contacting us at [security@biohub.org](mailto:security@biohub.org).
