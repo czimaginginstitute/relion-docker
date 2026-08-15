@@ -14,21 +14,15 @@ image is the source at that same ref.
 ## CTFFIND
 
 CTFFIND version 4.1.14 (vendored as a prebuilt binary at
-`extras/ctffind-4.1.14-linux64.tar.gz`, SHA256-pinned in `Dockerfile.relion`). CTFFIND4's own
-page states: "This software is licensed under the terms of the [Janelia Research Campus Software
-Copyright 1.1](http://license.janelia.org/license/)." —
-https://grigoriefflab.umassmed.edu/ctf_estimation_ctffind_ctftilt. That URL redirects to
-https://www.janelia.org/node/47808, Janelia's current license page, which describes the same
-license as a 3-clause BSD license copyright Howard Hughes Medical Institute (HHMI). The exact
-text below is reproduced from a published copy of this license (originally titled "The Janelia
-Farm Research Campus Software Copyright 1.1"):
-https://github.com/JaneliaSciComp/omnivore/blob/master/LICENSE.md.
+`extras/ctffind-4.1.14-linux64.tar.gz`, SHA256-pinned in `Dockerfile.relion`). The text below is
+copied verbatim from the `COPYING` file shipped in CTFFIND's own source distribution for this
+version, obtained directly from the
+[Grigorieff Lab](https://grigoriefflab.umassmed.edu/ctf_estimation_ctffind_ctftilt).
 
 ```
-The Janelia Farm Research Campus Software Copyright 1.1
-=========================================================
+The Janelia Research Campus Software License 1.2
 
-Copyright (c) Howard Hughes Medical Institute, All rights reserved.
+Copyright (c) 2018, Howard Hughes Medical Institute, All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:
