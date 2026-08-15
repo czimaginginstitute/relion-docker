@@ -14,6 +14,7 @@ concurrency:
 env:
   RELION_REF_DEFAULT: ver5.0
   DOCKERHUB_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion
+  DOCKERHUB_RELION_ZARR_STA_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/relion-zarr-sta
   GHCR_RELION_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion
   GHCR_RELION_ZARR_STA_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/relion-zarr-sta
 
@@ -166,6 +167,8 @@ jobs:
             RELION_RELEASE=${{ env.RELION_RELEASE }}
             CUDA_VERSION=${{ steps.meta.outputs.cuda_version }}
           tags: |
+            ${{ env.DOCKERHUB_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
+            ${{ env.DOCKERHUB_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
             ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_main }}
             ${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ steps.meta.outputs.tag_full }}
           labels: |
