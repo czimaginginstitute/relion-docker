@@ -10,7 +10,7 @@ This project is under active development.
 
 ## Quickstart: run relion-zarr-sta on your HPC cluster
 
-Most HPC clusters don't provide Docker (no root access) — use Apptainer instead.
+Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
 
 1. Pull the pre-built SIF:
 
@@ -18,16 +18,17 @@ Most HPC clusters don't provide Docker (no root access) — use Apptainer instea
    apptainer pull relion-zarr-sta.sif oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
    ```
 
-2. Install the shim tool and wire it into py2rely (so SLURM job scripts and py2rely, which
-   expect a native install, work unmodified against the container):
+2. Install [`relion-zarr-sta-client`](shims/), which brings in py2rely and zarr-particle-tools
+   (these run natively; `sbatch` needs the host's own SLURM setup), and wire it up:
 
    ```
    pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=shims
-   relion-docker-shims --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py2rely
+   relion-zarr-sta-client --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py2rely
    ```
 
-That's it — py2rely's SLURM job scripts now transparently run inside the container. See
-[`shims/README.md`](shims/README.md) for options.
+That's it: RELION and zarr-particle-tools' job commands now transparently run inside the
+container when py2rely's SLURM job scripts call them. See [`shims/README.md`](shims/README.md)
+for options.
 
 ## Running locally with Docker
 

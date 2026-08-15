@@ -33,7 +33,7 @@ def wire_py2rely(outdir: Path) -> None:
     if shutil.which("py2rely") is None:
         print(
             "error: --wire-py2rely requires the `py2rely` CLI to be on PATH "
-            "(pip install py2rely first)",
+            "(it's a dependency of this package -- check your install)",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -53,12 +53,13 @@ def wire_py2rely(outdir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="relion-docker-shims",
+        prog="relion-zarr-sta-client",
         description=(
-            "Generate PATH shims that transparently route native command invocations "
-            "(mpirun, relion_*, py2rely, zarr-particle-*) through `apptainer exec` into "
-            "a relion-docker image, so SLURM job scripts written for a native install "
-            "work unmodified against the container."
+            "Native client for relion-zarr-sta. Installs py2rely and zarr-particle-tools "
+            "(orchestration and job commands run natively -- sbatch needs the host's SLURM "
+            "setup) and generates PATH shims that route RELION and zarr-particle-tools job "
+            "binaries through `apptainer exec` into the container, so job scripts written for "
+            "a native install work unmodified."
         ),
     )
     parser.add_argument("--sif", required=True, help="path to the .sif image")

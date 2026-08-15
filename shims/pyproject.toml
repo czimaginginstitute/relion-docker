@@ -3,15 +3,19 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "relion-docker-shims"
+name = "relion-zarr-sta-client"
 version = "0.1.0"
-description = "Generate PATH shims that transparently route native command invocations through apptainer exec into a relion-docker image"
+description = "Native client for relion-zarr-sta: py2rely + zarr-particle-tools on the host, with PATH shims that route RELION/job binaries through the container"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
+dependencies = [
+    "py2rely",
+    "zarr-particle-tools[pipeliner]",
+]
 
 [project.scripts]
-relion-docker-shims = "relion_docker_shims.cli:main"
+relion-zarr-sta-client = "relion_zarr_sta_client.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/relion_docker_shims"]
+packages = ["src/relion_zarr_sta_client"]
