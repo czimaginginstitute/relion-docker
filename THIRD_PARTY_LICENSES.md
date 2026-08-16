@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-relion-docker's own code (Dockerfiles, CI configuration, `shims/`) is MIT-licensed (see
+relion-docker's own code (Dockerfiles, CI configuration, `client/`) is MIT-licensed (see
 [LICENSE.md](LICENSE.md)). The images this repository builds bundle third-party software under
 its own upstream license, listed below.
 

@@ -8,6 +8,14 @@ Hub](https://hub.docker.com/r/jidaniel/relion).
 
 This project is under active development.
 
+## Contents
+
+- [Quickstart: run relion-zarr-sta on your HPC cluster](#quickstart-run-relion-zarr-sta-on-your-hpc-cluster)
+- [Running locally with Docker](#running-locally-with-docker)
+- [Apptainer reference](#apptainer-reference)
+- [Image reference](#image-reference)
+- [Licensing](#licensing)
+
 ## Quickstart: run relion-zarr-sta on your HPC cluster
 
 Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
@@ -18,17 +26,32 @@ Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
    apptainer pull relion-zarr-sta.sif oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.8
    ```
 
-2. Install [`relion-zarr-sta-client`](shims/), which brings in py2rely and zarr-particle-tools
+2. Install [`relion-zarr-sta-client`](client/), which brings in py2rely and zarr-particle-tools
    (these run natively; `sbatch` needs the host's own SLURM setup), and wire it up:
 
    ```
-   pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=shims
+   pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=client
    relion-zarr-sta-client --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py2rely
    ```
 
 That's it: RELION and zarr-particle-tools' job commands now transparently run inside the
-container when py2rely's SLURM job scripts call them. See [`shims/README.md`](shims/README.md)
-for options.
+container when py2rely's SLURM job scripts call them.
+
+### What the client actually does
+
+Step 2 above generates a folder of small wrapper scripts, one per RELION/job binary (e.g.
+`relion_refine_mpi`, `zarr-particle-extract`), and puts that folder on `PATH`. Each wrapper has
+the same name as the real binary, so anything that calls that name (a SLURM job script, py2rely,
+you typing it in a shell) can't tell the difference; it just runs. Under the hood, the wrapper
+runs `apptainer exec relion-zarr-sta.sif <the real binary> "$@"`, passing through whatever
+arguments it was called with. So the binary itself never has to exist natively on the machine;
+the wrapper stands in for it and transparently hands the work to the container.
+
+`py2rely` and `zarr-particle-pipeline` themselves are not wrapped this way, because they call
+`sbatch` to submit jobs, and `sbatch` needs the real host's SLURM setup; that can't run inside a
+container. So those two run natively (installed by `relion-zarr-sta-client` as real dependencies),
+and only reach into the container for the actual RELION/job binaries once a job is running. See
+[`client/README.md`](client/README.md) for the full option list.
 
 ## Running locally with Docker
 
@@ -46,7 +69,7 @@ docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
 
 ## Apptainer reference
 
-Apptainer (formerly Singularity — `singularity` accepts the same commands) can pull and convert
+Apptainer (formerly Singularity; `singularity` accepts the same commands) can pull and convert
 these images directly. Note it consumes the built image, not the Dockerfile:
 
 ```
@@ -67,7 +90,7 @@ apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif reli
 ```
 
 For `relion-zarr-sta` on a SLURM cluster, see the
-[Quickstart](#quickstart-run-relion-zarr-sta-on-your-hpc-cluster) above for the shim-based
+[Quickstart](#quickstart-run-relion-zarr-sta-on-your-hpc-cluster) above for the client-based
 integration.
 
 ## Image reference
@@ -100,7 +123,7 @@ For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/p
 ## Licensing
 
 relion-docker's own code is licensed under [MIT](LICENSE.md). The built images bundle
-third-party software (RELION, CTFFIND, and others) under their own upstream licenses — see
+third-party software (RELION, CTFFIND, and others) under their own upstream licenses; see
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Code of Conduct

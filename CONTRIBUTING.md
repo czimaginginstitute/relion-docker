@@ -31,7 +31,7 @@ apptainer build relion-zarr-sta.sif docker-daemon://relion-zarr-sta:test
 apptainer exec --nv relion-zarr-sta.sif relion_refine --version
 ```
 
-`shims/` is a separate Python package — see [`shims/README.md`](shims/README.md) for its own
+`client/` is a separate Python package — see [`client/README.md`](client/README.md) for its own
 development notes.
 
 ## Making Changes
