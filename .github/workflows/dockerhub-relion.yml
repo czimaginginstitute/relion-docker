@@ -112,7 +112,11 @@ jobs:
           TAG_MAIN="${RELION_REF#ver}-cuda${CUDA_MAJOR_MINOR}"
           TAG_FULL="${RELION_REF#ver}-cuda${CUDA_VERSION}"
 
+          # Resolve RELION ref to its commit for the source-revision label
+          RELION_SHA="$(git ls-remote https://github.com/3dem/relion.git "${RELION_REF}" | head -n1 | cut -f1)"
+
           echo "relion_ref=${RELION_REF}" >> $GITHUB_OUTPUT
+          echo "relion_sha=${RELION_SHA}" >> $GITHUB_OUTPUT
           echo "cuda_version=${CUDA_VERSION}" >> $GITHUB_OUTPUT
           echo "tag_main=${TAG_MAIN}" >> $GITHUB_OUTPUT
           echo "tag_full=${TAG_FULL}" >> $GITHUB_OUTPUT
@@ -138,6 +142,7 @@ jobs:
             org.opencontainers.image.description=RELION built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.relion.source.revision=${{ steps.meta.outputs.relion_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -176,6 +181,7 @@ jobs:
             org.opencontainers.image.description=RELION with zarr-particle-tools and py2rely for CryoET Data Portal STA workflows, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.relion.source.revision=${{ steps.meta.outputs.relion_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

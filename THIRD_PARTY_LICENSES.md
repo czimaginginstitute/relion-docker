@@ -4,12 +4,21 @@ relion-docker's own code (Dockerfiles, CI configuration, `client/`) is MIT-licen
 [LICENSE.md](LICENSE.md)). The images this repository builds bundle third-party software under
 its own upstream license, listed below.
 
+This file is bundled inside the images themselves at `/opt/licenses/THIRD_PARTY_LICENSES.md`,
+alongside RELION's own license text (`/opt/licenses/RELION-LICENSE`) and the exact upstream
+RELION commit that was compiled in (`/opt/licenses/RELION-SOURCE-COMMIT.txt`, also recorded as
+the `org.relion.source.revision` image label). Each apt package additionally carries its own
+`/usr/share/doc/<pkg>/copyright`, each Python package its `*.dist-info/` license, and the
+NVIDIA CUDA base image its EULA at `/NGC-DL-CONTAINER-LICENSE`.
+
 ## RELION
 
 RELION is licensed under [GPL-2.0-or-later](https://github.com/3dem/relion/blob/master/LICENSE).
-`Dockerfile.relion` builds it from source at the pinned `RELION_REF` build argument, from the
-upstream repository at https://github.com/3dem/relion — the corresponding source for any built
-image is the source at that same ref.
+`Dockerfile.relion` builds it from source at the `RELION_REF` build argument, from the upstream
+repository at https://github.com/3dem/relion. The complete corresponding source for any built
+image is that repository at the exact commit recorded inside the image at
+`/opt/licenses/RELION-SOURCE-COMMIT.txt` (and in the `org.relion.source.revision` image label).
+See "Corresponding source for GPL/AGPL components" below.
 
 ## CTFFIND
 
@@ -53,5 +62,30 @@ a file included in the tarball.
 ## Other bundled software (conda/pip/apt packages)
 
 Both images also install a conda/pip environment (PyTorch, CTFFIND's runtime dependencies,
-py2rely, zarr-particle-tools, etc.) and apt packages. Each keeps its own upstream license; see the
-respective package's own repository/registry entry for details.
+py2rely, zarr-particle-tools, etc.) and apt packages. Each keeps its own upstream license and
+ships its own license text inside the image — apt packages at `/usr/share/doc/<pkg>/copyright`,
+Python packages in their `*.dist-info/` directory. `relion-zarr-sta` adds py2rely and
+zarr-particle-tools, both MIT-licensed.
+
+## Corresponding source for GPL/AGPL components
+
+The images redistribute the following software in binary form under the GPL or AGPL. The
+complete corresponding source for each is identified below; in addition, **we hereby offer, for
+any recipient of these images and for a period of three years, to provide the complete
+corresponding source for these components on request at opensource@biohub.org.**
+
+- **RELION** and its bundled companion tools (relion-blush, relion-classranker, DynaMight,
+  topaz, model-angelo) — GPL-2.0-or-later / per each tool's upstream license. Built from source
+  from the [3dem GitHub organization](https://github.com/3dem); the exact RELION commit is
+  recorded at `/opt/licenses/RELION-SOURCE-COMMIT.txt`.
+- **FFTW3** (GPL-2.0-or-later) and **Ghostscript** (AGPL-3.0) — installed unmodified from the
+  Ubuntu 22.04 archive; corresponding source is available from Ubuntu (e.g. `apt-get source
+  <pkg>`). Ghostscript is invoked only as a local command-line tool and is never exposed to
+  users over a network, so the AGPL §13 (remote-network-interaction) source requirement does
+  not apply; the ordinary source requirement for binary distribution is covered by this offer.
+- **PyQt5** (GPL-3.0) — installed unmodified via pip; corresponding source is the upstream
+  sdist on PyPI / from Riverbank Computing.
+
+`libgomp` is licensed GPL-3.0 **with the GCC Runtime Library Exception**, which permits
+distribution alongside compiled programs without a corresponding-source obligation for the
+runtime library, so it is not covered by the offer above.

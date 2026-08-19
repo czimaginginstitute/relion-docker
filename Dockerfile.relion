@@ -35,6 +35,12 @@ SHELL ["/bin/bash", "-l", "-c"]
 WORKDIR /opt
 RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1
 WORKDIR /opt/relion
+
+# Stage RELION's license + exact built commit (GPL corresponding source)
+RUN mkdir -p /opt/licenses \
+ && cp /opt/relion/LICENSE /opt/licenses/RELION-LICENSE \
+ && git -C /opt/relion rev-parse HEAD > /opt/licenses/RELION-SOURCE-COMMIT.txt
+
 RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -a --yes
 
 # ensure lib/share exist so the runtime COPY never misses RELION-installed files
@@ -65,6 +71,10 @@ COPY --from=build --chown=relion:relion /usr/local/lib/ /usr/local/lib/
 COPY --from=build --chown=relion:relion /usr/local/share/ /usr/local/share/
 COPY --from=build --chown=relion:relion ${CTFFIND_HOME}/ ${CTFFIND_HOME}/
 COPY --from=build --chown=relion:relion /root/.local/share/mamba /root/.local/share/mamba
+
+# Bundle third-party notices so they travel with the image
+COPY --from=build --chown=relion:relion /opt/licenses/ /opt/licenses/
+COPY --chown=relion:relion THIRD_PARTY_LICENSES.md /opt/licenses/THIRD_PARTY_LICENSES.md
 
 # fail the build if a runtime library is missing or RELION can't run
 RUN ldd /usr/local/bin/relion_refine | grep -q "not found" \
