@@ -284,8 +284,7 @@ jobs:
         if: always()
         run: df -h
 
-  # Single stable status check to require in branch protection. The build-push matrix
-  # produces brittle per-leg context names; gate on this aggregate instead.
+  # Stable status check for branch protection (build-push matrix leg names are brittle).
   ci-pass:
     needs: [ build-push ]
     if: always()
