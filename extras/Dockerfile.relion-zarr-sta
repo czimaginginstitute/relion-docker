@@ -4,13 +4,7 @@ ARG CUDA_VERSION=12.8.0
 
 FROM ghcr.io/czimaginginstitute/relion:${RELION_RELEASE}-cuda${CUDA_VERSION} AS base
 
-# slim base has no toolchain for building py2rely/zarr-particle-tools
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential \
- && rm -rf /var/lib/apt/lists/*
-USER relion
-
+# py2rely/zarr-particle-tools and deps install from prebuilt wheels; no toolchain needed.
 # Apptainer overrides $HOME at runtime, which breaks micromamba's default prefix lookup
 ENV MAMBA_ROOT_PREFIX=/home/relion/.local/share/mamba
 
