@@ -283,3 +283,17 @@ jobs:
       - name: Show disk space (end)
         if: always()
         run: df -h
+
+  # Single stable status check to require in branch protection. The build-push matrix
+  # produces brittle per-leg context names; gate on this aggregate instead.
+  ci-pass:
+    needs: [ build-push ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require build-push to have succeeded
+        run: |
+          if [ "${{ needs.build-push.result }}" != "success" ]; then
+            echo "build-push result: ${{ needs.build-push.result }}"
+            exit 1
+          fi
