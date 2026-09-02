@@ -1,0 +1,6 @@
+# CVE-2025-32434: torch.load RCE in torch 2.0.1 (fixed in 2.6.0).
+# torch is pinned by upstream RELION ver5.0 (environment.yml); present in relion:5.0*
+# and relion-zarr-sta*. Exploiting it requires loading an untrusted checkpoint, and
+# RELION loads only trusted bundled weights, so there is no exposed path. The 5.1
+# images already ship the fixed torch. Accepted; revisit when upstream bumps torch.
+CVE-2025-32434

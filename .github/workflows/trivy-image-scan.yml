@@ -32,6 +32,9 @@ jobs:
         with:
           remove-browsers: true
 
+      - name: Checkout   # for .trivyignore
+        uses: actions/checkout@v5
+
       - name: Log in to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
@@ -48,6 +51,7 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
+          trivyignores: .trivyignore
 
       - name: Upload SARIF to code scanning
         if: always()
