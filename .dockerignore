@@ -1,0 +1,24 @@
+# Keep VCS metadata and dev/CI files out of the Docker build context so a COPY can
+# never sweep credentials into an image layer. This is defense-in-depth: an
+# actions/checkout .git/config persists its token as an http.extraheader, and a
+# broad COPY of a checkout dir would otherwise bake that token into a published layer.
+#
+# Do NOT ignore files the Dockerfiles COPY from context:
+#   - THIRD_PARTY_LICENSES.md      (Dockerfile.relion)
+#   - extras/ctffind-*.tar.gz      (Dockerfile.relion)
+
+.git
+.gitattributes
+.github
+.dockerignore
+
+client/
+extras/Dockerfile.*
+
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+README.md
+SECURITY.md
+release-please.config.json
+.release-please.manifest.json

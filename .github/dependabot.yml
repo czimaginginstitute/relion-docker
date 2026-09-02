@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Actions used by the workflows (they are SHA-pinned; Dependabot bumps the pins).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Python client package.
+  - package-ecosystem: pip
+    directory: /client
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Base images. Note: the FROM tags in these Dockerfiles are ARG-templated
+  # (CUDA_VERSION) and the zarr-sta base is an internal image, so updates here are
+  # limited; kept so any literal image reference added later is tracked automatically.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /extras
+    schedule:
+      interval: weekly
