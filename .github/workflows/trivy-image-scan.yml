@@ -1,12 +1,10 @@
 name: Trivy image scan
 
-# Scans the published RELION images for HIGH/CRITICAL OS/library vulnerabilities,
-# uploads results to code scanning, and fails on fixable findings. Run on demand
-# (workflow_dispatch) before flipping packages public, and weekly thereafter.
+# HIGH/CRITICAL scan of the published images. Run before making packages public; weekly after.
 on:
   workflow_dispatch:
   schedule:
-    - cron: '41 4 * * 1'   # weekly, Monday 04:41 UTC
+    - cron: '41 4 * * 1'
 
 permissions:
   contents: read
@@ -22,7 +20,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # keep in sync with dockerhub-relion.yml tag_main forms
         image:
           - { name: relion,          tag: 5.1-cuda12.8 }
           - { name: relion,          tag: 5.0-cuda12.8 }
@@ -42,18 +39,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Scan image (SARIF + gate on fixable HIGH/CRITICAL)
+      - name: Scan image
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image.name }}:${{ matrix.image.tag }}
           format: sarif
           output: trivy.sarif
           severity: HIGH,CRITICAL
-          ignore-unfixed: true   # don't gate on CVEs with no upstream fix yet
+          ignore-unfixed: true
           exit-code: '1'
 
       - name: Upload SARIF to code scanning
-        if: always()   # publish results even when the gate above fails the job
+        if: always()
         uses: github/codeql-action/upload-sarif@5ba2889ada762081db2c4f32a729827dce632c7b # v3
         with:
           sarif_file: trivy.sarif
