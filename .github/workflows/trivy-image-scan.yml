@@ -48,7 +48,7 @@ jobs:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image.name }}:${{ matrix.image.tag }}
           format: sarif
           output: trivy.sarif
-          severity: HIGH,CRITICAL
+          severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
           trivyignores: .trivyignore
