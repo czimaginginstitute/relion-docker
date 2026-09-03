@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.3.0](https://github.com/czimaginginstitute/relion-docker/compare/relion-docker-v0.2.0...relion-docker-v0.3.0) (2026-09-03)
+
+
+### ✨ Features
+
+* also push relion-zarr-sta to Docker Hub ([efa9cb7](https://github.com/czimaginginstitute/relion-docker/commit/efa9cb7e0cc1ced3ccfc38571e31e710dae5883c))
+
+
+### 🐞 Bug Fixes
+
+* bundle third-party license notices and pin RELION source commit ([dd9c200](https://github.com/czimaginginstitute/relion-docker/commit/dd9c20008cb044d5997e57b6bc35cd8444e292f1))
+* correct CTFFIND license to v1.2/2018 per its actual COPYING file ([cb32b90](https://github.com/czimaginginstitute/relion-docker/commit/cb32b90f31ec322f31e9133767da6d7945246b4e))
+* **relion-zarr-sta:** drop build-essential from runtime image ([9f31d99](https://github.com/czimaginginstitute/relion-docker/commit/9f31d992ecf63555d7df3329e36e19c35f0edbb8))
+
+
+### 📝 Documentation
+
+* pin exact CTFFIND version/license text and sources in THIRD_PARTY_LICENSES.md ([cdcda52](https://github.com/czimaginginstitute/relion-docker/commit/cdcda527b845e88ad712a874e9785e2e26bb382c))
+* rename shims/ to client/, explain wrapper mechanism more clearly, add TOC ([8453b63](https://github.com/czimaginginstitute/relion-docker/commit/8453b63ea4c07e306b544694906c1d22d7cda9dd))
+* **security:** note RELION 5.0 torch CVE, recommend 5.1 images ([fdba12d](https://github.com/czimaginginstitute/relion-docker/commit/fdba12d7696ff9f798b4927698a929c17070df10))
+
+
+### 💅 Styles
+
+* trim comments in security tooling files to essentials ([99c23ce](https://github.com/czimaginginstitute/relion-docker/commit/99c23ce7fcf7d847ea3bfe8e115b93024e26928a))
+
+
+### 🧹 Miscellaneous Chores
+
+* **security:** add image/code scanning, dependabot, and .dockerignore ([e210fdc](https://github.com/czimaginginstitute/relion-docker/commit/e210fdc4cbd7c61d37256496152aca9e5ea8c034))
+
+
+### ♻️ Code Refactoring
+
+* rename shims to relion-zarr-sta-client, install py2rely/zarr-particle-tools natively ([ffdf063](https://github.com/czimaginginstitute/relion-docker/commit/ffdf063d2b9b24fd0356fdb9a66d9ebf8cb94a24))
+
+
+### ⚙ Continuous Integration
+
+* add .trivyignore for accepted torch CVE, wire it into the scan ([95e75bf](https://github.com/czimaginginstitute/relion-docker/commit/95e75bf17eab062b0deaec151b49a00684138609))
+* drop redundant CodeQL workflow, add ci-pass gate ([39620fc](https://github.com/czimaginginstitute/relion-docker/commit/39620fc36e716eec4fc93e9eea71511b8ca70d2e))
+* gate trivy scan on CRITICAL only ([6697dfb](https://github.com/czimaginginstitute/relion-docker/commit/6697dfb0b16c82cd187575db2a4927f7bd2541f4))
+
 ## [0.2.0](https://github.com/czimaginginstitute/relion-docker/compare/relion-docker-v0.1.0...relion-docker-v0.2.0) (2026-08-14)
 
 
