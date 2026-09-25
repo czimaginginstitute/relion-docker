@@ -14,6 +14,7 @@ jobs:
     name: Scan ${{ matrix.image.name }}:${{ matrix.image.tag }}
     runs-on: ubuntu-latest
     permissions:
+      actions: read   # upload-sarif reads the run on private repos
       contents: read
       packages: read
       security-events: write
@@ -32,7 +33,7 @@ jobs:
         with:
           remove-browsers: true
 
-      - name: Checkout   # for .trivyignore
+      - name: Checkout   # for .trivyignore.yaml
         uses: actions/checkout@v5
 
       - name: Log in to GHCR
@@ -42,16 +43,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Scan image
+      - name: Scan image (HIGH/CRITICAL report)
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image.name }}:${{ matrix.image.tag }}
           format: sarif
           output: trivy.sarif
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true   # otherwise the action reports (and gates on) all severities
+          ignore-unfixed: true
+          exit-code: '0'
+          trivyignores: .trivyignore.yaml
+
+      - name: Gate on CRITICAL
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image.name }}:${{ matrix.image.tag }}
+          format: table
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: .trivyignore
+          trivyignores: .trivyignore.yaml
+          skip-setup-trivy: true
 
       - name: Upload SARIF to code scanning
         if: always()
