@@ -32,8 +32,13 @@ RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
     | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
 SHELL ["/bin/bash", "-l", "-c"]
 
+# exact commit for RELION_REF; changing it busts the clone cache when upstream moves. Empty = branch tip.
+ARG RELION_SHA=""
 WORKDIR /opt
-RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1
+RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1 \
+ && if [ -n "${RELION_SHA}" ]; then \
+      git -C relion fetch --depth 1 origin "${RELION_SHA}" && git -C relion checkout --detach "${RELION_SHA}"; \
+    fi
 WORKDIR /opt/relion
 
 # Stage RELION's license + exact built commit (GPL corresponding source)
@@ -47,8 +52,7 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 RUN mkdir -p build /usr/local/lib /usr/local/share
 WORKDIR /opt/relion/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
-# drop object files in the same layer; the 6-arch 5.1 build otherwise fills the CI runner disk
-RUN make -j"$(nproc)" && make install && rm -rf /opt/relion/build/*
+RUN make -j"$(nproc)" && make install
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
 RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
@@ -62,8 +66,10 @@ ARG CTFFIND_VER=4.1.14
 ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
 ENV PATH="/usr/local/bin:${PATH}"
 
+# changes weekly in CI so the cached upgrade layer still picks up new security fixes
+ARG APT_REFRESH=""
 # runtime libraries only (GUI=OFF, so no fltk/x11); upgrade picks up base-image security fixes
-RUN apt-get update && apt-get upgrade -y \
+RUN echo "apt refresh: ${APT_REFRESH}" && apt-get update && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends \
     openmpi-bin libfftw3-single3 libfftw3-double3 \
     libtiff5 libpng16-16 ghostscript libgomp1 ca-certificates \
