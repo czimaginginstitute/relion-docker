@@ -47,9 +47,8 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 RUN mkdir -p build /usr/local/lib /usr/local/share
 WORKDIR /opt/relion/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
-# parallel make jobs; empty = nproc. Lower it for many-arch builds (nvcc memory).
-ARG MAKE_JOBS=""
-RUN make -j"${MAKE_JOBS:-$(nproc)}" && make install
+# drop object files in the same layer; the 6-arch 5.1 build otherwise fills the CI runner disk
+RUN make -j"$(nproc)" && make install && rm -rf /opt/relion/build/*
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
 RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
