@@ -32,7 +32,7 @@ jobs:
       relion_zarr_sta: ${{ steps.filter.outputs.relion_zarr_sta }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Check for image-relevant changes
         id: filter
@@ -108,7 +108,7 @@ jobs:
           docker system df
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
