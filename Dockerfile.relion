@@ -32,8 +32,13 @@ RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
     | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
 SHELL ["/bin/bash", "-l", "-c"]
 
+# exact commit for RELION_REF; changing it busts the clone cache when upstream moves. Empty = branch tip.
+ARG RELION_SHA=""
 WORKDIR /opt
-RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1
+RUN git clone https://github.com/3dem/relion.git --branch ${RELION_REF} --single-branch --depth 1 \
+ && if [ -n "${RELION_SHA}" ]; then \
+      git -C relion fetch --depth 1 origin "${RELION_SHA}" && git -C relion checkout --detach "${RELION_SHA}"; \
+    fi
 WORKDIR /opt/relion
 
 # Stage RELION's license + exact built commit (GPL corresponding source)
@@ -46,8 +51,15 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 # ensure lib/share exist so the runtime COPY never misses RELION-installed files
 RUN mkdir -p build /usr/local/lib /usr/local/share
 WORKDIR /opt/relion/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
+# RELION's FindCondaPython needs `conda` (absent with micromamba), so pass the env python explicitly;
+# otherwise every relion_python_* wrapper ships with an empty interpreter path
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}" \
+    -DPYTHON_EXE_PATH="${MAMBA_ROOT_PREFIX}/envs/$(sed -n 's/^name: *//p' /opt/relion/environment.yml)/bin/python"
 RUN make -j"$(nproc)" && make install
+
+# upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
+RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
+    pip install --no-cache-dir "setuptools>=78.1.1,<81"
 
 # ---- runtime stage (CUDA runtime libs only) ----
 FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu22.04 AS runtime
@@ -57,13 +69,19 @@ ARG CTFFIND_VER=4.1.14
 ENV CTFFIND_HOME=/opt/ctffind-${CTFFIND_VER}
 ENV PATH="/usr/local/bin:${PATH}"
 
-# runtime libraries only (GUI=OFF, so no fltk/x11)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# changes weekly in CI so the cached upgrade layer still picks up new security fixes
+ARG APT_REFRESH=""
+# runtime libraries only (GUI=OFF, so no fltk/x11); glib/libGL let PyQt5 load headless (dynamight
+# imports it at startup). upgrade picks up base-image security fixes
+RUN echo "apt refresh: ${APT_REFRESH}" && apt-get update && apt-get upgrade -y \
+ && apt-get install -y --no-install-recommends \
     openmpi-bin libfftw3-single3 libfftw3-double3 \
     libtiff5 libpng16-16 ghostscript libgomp1 ca-certificates \
+    libglib2.0-0 libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -ms /bin/bash relion
+# /root is 0700 in the base image; the env lives under it, so let the relion user traverse
+RUN useradd -ms /bin/bash relion && chmod 711 /root
 
 # RELION install, ctffind, micromamba + the conda env (kept at its original path)
 COPY --from=build --chown=relion:relion /usr/local/bin/ /usr/local/bin/
@@ -82,4 +100,9 @@ RUN ldd /usr/local/bin/relion_refine | grep -q "not found" \
     || relion_refine --version
 
 USER relion
+# the conda env and RELION's python wrappers must work for the non-root user
+# (torch_home must stay empty so model weights go to the user's own ~/.cache/torch, not /root)
+RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight" \
+ && relion_python_dynamight --help > /dev/null \
+ && grep -q '^torch_home=""$' /usr/local/bin/relion_python_blush
 WORKDIR /work
