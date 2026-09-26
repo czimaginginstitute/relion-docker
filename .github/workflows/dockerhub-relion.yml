@@ -321,6 +321,7 @@ jobs:
     needs: [ changes, build-push ]
     if: always()
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Require build-push to have succeeded (or been skipped for a non-image PR)
         run: |
