@@ -58,8 +58,10 @@ RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARC
 RUN make -j"$(nproc)" && make install
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
+# Drop the package cache too: it still holds the old setuptools and isn't needed at runtime.
 RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
-    pip install --no-cache-dir "setuptools>=78.1.1,<81"
+    pip install --no-cache-dir "setuptools>=78.1.1,<81" \
+ && rm -rf "${MAMBA_ROOT_PREFIX}/pkgs"
 
 # ---- runtime stage (CUDA runtime libs only) ----
 FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu22.04 AS runtime
