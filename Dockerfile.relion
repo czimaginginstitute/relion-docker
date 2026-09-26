@@ -77,7 +77,8 @@ RUN echo "apt refresh: ${APT_REFRESH}" && apt-get update && apt-get upgrade -y \
     libglib2.0-0 libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -ms /bin/bash relion
+# /root is 0700 in the base image; the env lives under it, so let the relion user traverse
+RUN useradd -ms /bin/bash relion && chmod 711 /root
 
 # RELION install, ctffind, micromamba + the conda env (kept at its original path)
 COPY --from=build --chown=relion:relion /usr/local/bin/ /usr/local/bin/
