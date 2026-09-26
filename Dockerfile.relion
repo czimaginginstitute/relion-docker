@@ -68,11 +68,13 @@ ENV PATH="/usr/local/bin:${PATH}"
 
 # changes weekly in CI so the cached upgrade layer still picks up new security fixes
 ARG APT_REFRESH=""
-# runtime libraries only (GUI=OFF, so no fltk/x11); upgrade picks up base-image security fixes
+# runtime libraries only (GUI=OFF, so no fltk/x11); glib/libGL let PyQt5 load headless (dynamight
+# imports it at startup). upgrade picks up base-image security fixes
 RUN echo "apt refresh: ${APT_REFRESH}" && apt-get update && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends \
     openmpi-bin libfftw3-single3 libfftw3-double3 \
     libtiff5 libpng16-16 ghostscript libgomp1 ca-certificates \
+    libglib2.0-0 libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash relion
@@ -94,4 +96,6 @@ RUN ldd /usr/local/bin/relion_refine | grep -q "not found" \
     || relion_refine --version
 
 USER relion
+# the conda env must be usable by the non-root user
+RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight"
 WORKDIR /work
