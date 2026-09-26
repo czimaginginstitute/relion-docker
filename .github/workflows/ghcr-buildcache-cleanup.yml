@@ -1,0 +1,57 @@
+name: GHCR build cache cleanup
+
+# Each cache export re-points its tag, orphaning the previous (untagged) manifest; delete those.
+# Scoped to relion-buildcache only: image packages have untagged attestation manifests that
+# tagged indexes still reference.
+on:
+  schedule:
+    - cron: '17 5 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List only, delete nothing'
+        type: boolean
+        default: true
+      min_age_hours:
+        description: 'Only delete untagged versions older than this'
+        default: '24'
+  pull_request:
+    branches: [ main ]
+    paths: [ '.github/workflows/ghcr-buildcache-cleanup.yml' ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-buildcache-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PKG: orgs/${{ github.repository_owner }}/packages/container/relion-buildcache
+      # PRs always dry-run (and show everything); schedule deletes for real
+      DRY_RUN: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+      MIN_AGE_HOURS: ${{ github.event_name == 'pull_request' && '0' || inputs.min_age_hours || '24' }}
+    steps:
+      - name: Delete untagged cache versions
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d "-${MIN_AGE_HOURS} hours" +%s)
+          gh api --paginate "$PKG/versions?per_page=100" --jq '.[]' > versions.jsonl
+          jq -r '"tagged: \(.metadata.container.tags | join(","))"' versions.jsonl | grep -v 'tagged: $' || true
+          jq -r --argjson cutoff "$cutoff" \
+            'select((.metadata.container.tags | length) == 0 and (.created_at | fromdateiso8601) < $cutoff)
+             | "\(.id) \(.created_at)"' versions.jsonl > candidates.txt
+          echo "untagged older than ${MIN_AGE_HOURS}h: $(wc -l < candidates.txt) (dry_run=${DRY_RUN})"
+          while read -r id created; do
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $id ($created)"
+            else
+              gh api -X DELETE "$PKG/versions/$id" && echo "deleted $id ($created)"
+            fi
+          done < candidates.txt
