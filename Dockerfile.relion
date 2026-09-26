@@ -51,7 +51,10 @@ RUN micromamba create -f /opt/relion/environment.yml --yes && micromamba clean -
 # ensure lib/share exist so the runtime COPY never misses RELION-installed files
 RUN mkdir -p build /usr/local/lib /usr/local/share
 WORKDIR /opt/relion/build
-RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}"
+# RELION's FindCondaPython needs `conda` (absent with micromamba), so pass the env python explicitly;
+# otherwise every relion_python_* wrapper ships with an empty interpreter path
+RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}" \
+    -DPYTHON_EXE_PATH="${MAMBA_ROOT_PREFIX}/envs/$(sed -n 's/^name: *//p' /opt/relion/environment.yml)/bin/python"
 RUN make -j"$(nproc)" && make install
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
@@ -97,6 +100,9 @@ RUN ldd /usr/local/bin/relion_refine | grep -q "not found" \
     || relion_refine --version
 
 USER relion
-# the conda env must be usable by the non-root user
-RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight"
+# the conda env and RELION's python wrappers must work for the non-root user
+# (torch_home must stay empty so model weights go to the user's own ~/.cache/torch, not /root)
+RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight" \
+ && relion_python_dynamight --help > /dev/null \
+ && grep -q '^torch_home=""$' /usr/local/bin/relion_python_blush
 WORKDIR /work
