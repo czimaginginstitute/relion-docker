@@ -56,6 +56,8 @@ WORKDIR /opt/relion/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Release -DFETCH_WEIGHTS=OFF -DGUI=OFF -DCUDA_ARCH="${CUDA_ARCH}" \
     -DPYTHON_EXE_PATH="${MAMBA_ROOT_PREFIX}/envs/$(sed -n 's/^name: *//p' /opt/relion/environment.yml)/bin/python"
 RUN make -j"$(nproc)" && make install
+# upstream wrapper points at the build dir; the script is installed next to it (5.1+ only)
+RUN f=/usr/local/bin/relion_python_trace_amyloids; [ ! -e "$f" ] || sed -i 's|^relion_home=.*|relion_home="/usr/local"|' "$f"
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
 # Drop the package cache too: it still holds the old setuptools and isn't needed at runtime.
@@ -106,5 +108,6 @@ USER relion
 # (torch_home must stay empty so model weights go to the user's own ~/.cache/torch, not /root)
 RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight" \
  && relion_python_dynamight --help > /dev/null \
- && grep -q '^torch_home=""$' /usr/local/bin/relion_python_blush
+ && grep -q '^torch_home=""$' /usr/local/bin/relion_python_blush \
+ && { [ ! -e /usr/local/bin/relion_python_trace_amyloids ] || relion_python_trace_amyloids --help > /dev/null; }
 WORKDIR /work
