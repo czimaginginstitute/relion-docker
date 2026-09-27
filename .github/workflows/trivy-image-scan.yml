@@ -52,6 +52,7 @@ jobs:
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           limit-severities-for-sarif: true
           ignore-unfixed: true
+          timeout: 20m   # default 5m is too short for the torch libs in 5.1
           exit-code: '0'
           trivyignores: .trivyignore.yaml
 
@@ -62,6 +63,7 @@ jobs:
           format: table
           severity: CRITICAL
           ignore-unfixed: true
+          timeout: 20m   # default 5m is too short for the torch libs in 5.1
           exit-code: '1'
           trivyignores: .trivyignore.yaml
           skip-setup-trivy: true
