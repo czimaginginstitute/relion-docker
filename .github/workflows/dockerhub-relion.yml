@@ -236,18 +236,41 @@ jobs:
         # keep in sync with build-push tags (tag_main form)
         tag: [ "5.1-cuda12.8", "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+
+      # skip when the SIF already matches the image's layers (cached rebuilds keep layers identical)
+      - name: Check whether SIF is current
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SRC: ${{ github.repository_owner }}/relion
+          SIF: ${{ github.repository_owner }}/relion-sif
+        run: |
+          key=$(.github/scripts/sif-source-key.sh key "$SRC" "${{ matrix.tag }}")
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          if .github/scripts/sif-source-key.sh current "$SIF" "${{ matrix.tag }}" "$key"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "::notice::$SIF:${{ matrix.tag }} already built from layers $key; skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # relion's conda env (PyTorch/napari/cuDNN/NCCL, used by blush/classranker/topaz/tomo-view)
       # is large and not removable; unpacking it for SIF conversion needs real headroom.
       - name: Maximize build space
+        if: steps.check.outputs.skip != 'true'
         uses: mathio/gha-cleanup@aca3d43a05bf564f5fc69acb929a65b01797f22b # v1
         with:
           remove-browsers: true
           verbose: true
 
       - name: Show disk space (start)
+        if: steps.check.outputs.skip != 'true'
         run: df -h
 
       - name: Use $RUNNER_TEMP for Apptainer scratch
+        if: steps.check.outputs.skip != 'true'
         # apptainer writes temp files directly next to the .sif, not just under TMPDIR/CACHEDIR,
         # so everything needs to live under one dir that's writable end-to-end
         run: |
@@ -257,18 +280,27 @@ jobs:
           echo "SIF_PATH=$RUNNER_TEMP/relion.sif" >> "$GITHUB_ENV"
 
       - name: Set up Apptainer
+        if: steps.check.outputs.skip != 'true'
         uses: eWaterCycle/setup-apptainer@3f706d898c9db585b1d741b4692e66755f3a1b40 # v2
 
       - name: Log in to GHCR (oras)
+        if: steps.check.outputs.skip != 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | apptainer registry login -u "${{ github.actor }}" --password-stdin oras://ghcr.io
 
       - name: Convert pushed image to SIF and publish
+        if: steps.check.outputs.skip != 'true'
         run: |
           apptainer pull "$SIF_PATH" "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
           apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
 
+      - name: Tag SIF with its source layer key
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/scripts/sif-source-key.sh mark "${{ github.repository_owner }}/relion-sif" "${{ matrix.tag }}" "${{ steps.check.outputs.key }}"
+
       - name: Show disk space (end)
-        if: always()
+        if: always() && steps.check.outputs.skip != 'true'
         run: df -h
 
   # Same as publish-sif, but for relion-zarr-sta (GHCR-only source, own SIF package).
@@ -285,16 +317,39 @@ jobs:
         # only ver5.0 builds relion-zarr-sta (see build-push's matrix)
         tag: [ "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+
+      # skip when the SIF already matches the image's layers (cached rebuilds keep layers identical)
+      - name: Check whether SIF is current
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SRC: ${{ github.repository_owner }}/relion-zarr-sta
+          SIF: ${{ github.repository_owner }}/relion-zarr-sta-sif
+        run: |
+          key=$(.github/scripts/sif-source-key.sh key "$SRC" "${{ matrix.tag }}")
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          if .github/scripts/sif-source-key.sh current "$SIF" "${{ matrix.tag }}" "$key"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "::notice::$SIF:${{ matrix.tag }} already built from layers $key; skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Maximize build space
+        if: steps.check.outputs.skip != 'true'
         uses: mathio/gha-cleanup@aca3d43a05bf564f5fc69acb929a65b01797f22b # v1
         with:
           remove-browsers: true
           verbose: true
 
       - name: Show disk space (start)
+        if: steps.check.outputs.skip != 'true'
         run: df -h
 
       - name: Use $RUNNER_TEMP for Apptainer scratch
+        if: steps.check.outputs.skip != 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/aptmp" "$RUNNER_TEMP/apcache"
           echo "APPTAINER_TMPDIR=$RUNNER_TEMP/aptmp" >> "$GITHUB_ENV"
@@ -302,18 +357,27 @@ jobs:
           echo "SIF_PATH=$RUNNER_TEMP/relion-zarr-sta.sif" >> "$GITHUB_ENV"
 
       - name: Set up Apptainer
+        if: steps.check.outputs.skip != 'true'
         uses: eWaterCycle/setup-apptainer@3f706d898c9db585b1d741b4692e66755f3a1b40 # v2
 
       - name: Log in to GHCR (oras)
+        if: steps.check.outputs.skip != 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | apptainer registry login -u "${{ github.actor }}" --password-stdin oras://ghcr.io
 
       - name: Convert pushed image to SIF and publish
+        if: steps.check.outputs.skip != 'true'
         run: |
           apptainer pull "$SIF_PATH" "docker://${{ env.GHCR_RELION_ZARR_STA_IMAGE_NAME }}:${{ matrix.tag }}"
           apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-zarr-sta-sif:${{ matrix.tag }}"
 
+      - name: Tag SIF with its source layer key
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/scripts/sif-source-key.sh mark "${{ github.repository_owner }}/relion-zarr-sta-sif" "${{ matrix.tag }}" "${{ steps.check.outputs.key }}"
+
       - name: Show disk space (end)
-        if: always()
+        if: always() && steps.check.outputs.skip != 'true'
         run: df -h
 
   # Stable status check for branch protection (build-push matrix leg names are brittle).
