@@ -60,8 +60,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Note: no LICENSE file ships inside the vendored binary tarball itself (it contains only
 `bin/ctffind` and a plotting script) — the above is reproduced from the sources cited, not from
-a file included in the tarball. The `ctffind` binary is statically linked and includes Intel MKL
-(Intel Simplified Software License) and wxWidgets (wxWindows Library Licence).
+a file included in the tarball. The `ctffind` binary is the upstream prebuilt release, unmodified,
+and is statically linked. It includes Intel MKL (Intel Simplified Software License), wxWidgets
+(wxWindows Library Licence), glibc (LGPL-2.1-or-later), libstdc++ (GPL-3.0 with the GCC Runtime
+Library Exception), and libtiff/libjpeg (permissive).
 
 ## Other bundled software (conda/pip/apt packages)
 
@@ -70,7 +72,8 @@ adds its own env with py2rely and zarr-particle-tools) and apt packages. Each ke
 ships its own license text inside the image — apt packages at `/usr/share/doc/<pkg>/copyright`,
 conda packages under `/opt/licenses/conda/<name>-<version>-<build>/` (relion-zarr-sta's env:
 `/opt/licenses/conda-zarr-sta/`), pip packages in their `*.dist-info/` directory.
-micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`. `relion-zarr-sta` adds py2rely and
+micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`; it is a static
+binary that also bundles libsolv, libarchive, libcurl, OpenSSL and others (BSD/MIT/Apache-2.0). `relion-zarr-sta` adds py2rely and
 zarr-particle-tools, both MIT-licensed.
 
 ## Corresponding source for GPL/AGPL components
@@ -80,18 +83,22 @@ complete corresponding source for each is identified below; in addition, **we he
 any recipient of these images and for a period of three years, to provide the complete
 corresponding source for these components on request at opensource@biohub.org.**
 
-- **RELION** and its bundled companion tools (relion-blush, relion-classranker, DynaMight,
-  topaz, model-angelo) — GPL-2.0-or-later / per each tool's upstream license. Built from source
-  from the [3dem GitHub organization](https://github.com/3dem); the exact RELION commit is
-  recorded at `/opt/licenses/RELION-SOURCE-COMMIT.txt`.
+- **RELION** (GPL-2.0-or-later) — built from source from the
+  [3dem GitHub organization](https://github.com/3dem); the exact RELION commit is recorded at
+  `/opt/licenses/RELION-SOURCE-COMMIT.txt`.
+- RELION's companion tools **relion-classranker** and **topaz** (GPL-3.0); relion-blush and
+  model-angelo (MIT) and DynaMight (BSD) are listed for completeness.
 - **Ubuntu 22.04 packages**, including **FFTW3** (GPL-2.0-or-later), **Ghostscript** (AGPL-3.0)
   and the GPL base-system packages (bash, coreutils, …) — installed unmodified from the
   Ubuntu 22.04 archive; corresponding source is available from Ubuntu (e.g. `apt-get source
   <pkg>`). Ghostscript is invoked only as a local command-line tool and is never exposed to
   users over a network, so the AGPL §13 (remote-network-interaction) source requirement does
   not apply; the ordinary source requirement for binary distribution is covered by this offer.
-- **PyQt5** (GPL-3.0) — installed unmodified via pip; corresponding source is the upstream
-  sdist on PyPI / from Riverbank Computing.
+- **PyQt5** (GPL-3.0) and the Qt 5 libraries it pulls in via `PyQt5-Qt5` (LGPL-3.0) — installed
+  unmodified via pip; corresponding source is the upstream sdist on PyPI / from Riverbank
+  Computing and the Qt Project.
+- **glibc** (LGPL-2.1-or-later), statically linked into the upstream `ctffind` binary (see above);
+  source from the GNU project.
 - **conda-forge GPL packages** in both envs, e.g. `readline` (GPL-3.0) and binutils'
   `ld_impl_linux-64` (GPL-3.0) — installed unmodified; corresponding source is linked from each
   package's conda-forge feedstock, and license texts are under `/opt/licenses/conda*/`.

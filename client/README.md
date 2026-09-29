@@ -1,7 +1,8 @@
 # relion-zarr-sta-client
 
 Makes the `relion-zarr-sta` container's binaries usable as if they were installed natively.
-Running the command below generates one small wrapper script per binary (`relion_refine_mpi`,
+Running the command below generates one small wrapper script per binary (`mpirun`, every
+`relion_*` binary in the image, and the zarr-particle-tools job commands, e.g. `relion_refine_mpi`,
 `zarr-particle-extract`, etc.), named exactly like the real thing; you put that folder first on
 `PATH`. Whatever calls that name, a SLURM job script, py2rely, or you in a shell, can't tell it's
 not the real binary; each wrapper runs `apptainer exec --nv [--bind …] /abs/path.sif <binary> "$@"`
@@ -35,13 +36,16 @@ export PATH="$HOME/relion-shims/bin:$PATH"
 
 To also make py2rely's SLURM job scripts use the wrappers, add `--wire-py2rely`. It runs
 `py2rely config import`, which **replaces** py2rely's `python_load`/`relion_load` with the
-`export PATH=…` line; re-add any module/venv lines afterwards with `py2rely config add`.
+`export PATH=…` line. To keep module/venv lines, re-run `py2rely config add` afterwards and enter
+them **together with** the `export PATH=…` line (it replaces each value, it doesn't append).
 
 ## Options
 
-- `--sif PATH` (required): the relion-zarr-sta SIF. Stored as an absolute path.
+- `--sif PATH` (required): the relion-zarr-sta SIF; must exist. Stored as an absolute path
+  (symlinks resolved). The client lists its `relion_*` binaries with `apptainer exec`; without
+  Apptainer it wraps a default set.
 - `--out DIR` (required): directory to write the wrappers to.
-- `--bind PATH`: host path bind-mounted into the container at the same path (repeatable; none by default). Set this to the shared storage your data lives under. Stored as
-an absolute path as typed (symlinks aren't resolved); can't contain `,` or `:`.
+- `--bind PATH`: host path bind-mounted into the container at the same path (repeatable; none by default); must exist. Set this to the shared storage your data lives under.
+Stored as an absolute path as typed (symlinks aren't resolved); can't contain `,` or `:`.
 - `--env-name NAME`: micromamba env name inside the image for zarr-particle-tools' job commands (default: `relion-zarr-sta`).
 - `--wire-py2rely`: also point py2rely's `python_load`/`relion_load` at the wrapper directory (see above).

@@ -29,13 +29,29 @@ def _write_shim(outdir: Path, name: str, sif: Path, binds: list[str], invocation
     path.chmod(path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
 
+def list_system_bins(sif: Path) -> list[str]:
+    """mpirun + every relion_* in the image's /usr/local/bin; falls back to SYSTEM_BINS."""
+    try:
+        out = subprocess.run(
+            ["apptainer", "exec", str(sif), "sh", "-c", "cd /usr/local/bin && ls -1 relion_*"],
+            capture_output=True, text=True, check=True, timeout=300,
+        ).stdout.split()
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"warning: couldn't list binaries in {sif} ({e}); wrapping the default set only",
+              file=sys.stderr)
+        return SYSTEM_BINS
+    names = sorted(n for n in out if n.startswith("relion_"))
+    return ["mpirun", *names] if names else SYSTEM_BINS
+
+
 def generate_shims(sif: Path, outdir: Path, binds: list[str], env_name: str) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
-    for name in SYSTEM_BINS:
+    system_bins = list_system_bins(sif)
+    for name in system_bins:
         _write_shim(outdir, name, sif, binds, [name])
     for name in ENV_BINS:
         _write_shim(outdir, name, sif, binds, ["micromamba", "run", "-n", env_name, name])
-    return len(SYSTEM_BINS) + len(ENV_BINS)
+    return len(system_bins) + len(ENV_BINS)
 
 
 def wire_py2rely(outdir: Path) -> None:

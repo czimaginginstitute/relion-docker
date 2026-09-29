@@ -48,7 +48,8 @@ apptainer exec --nv relion-zarr-sta.sif relion_refine --version
    command, not just that the build succeeds
 4. Open a pull request against `main`, describing what changed and why, and how you tested it
 
-CI builds every image on pull requests that touch it. On merge to `main`, and weekly (Monday
+On PRs that change image inputs, CI builds all relion images; relion-zarr-sta is built (against
+the *published* relion base) when its Dockerfile, `Dockerfile.relion` or the workflow changes. On merge to `main`, and weekly (Monday
 06:23 UTC), it pushes the images and publishes their SIFs (skipping SIFs whose image is
 unchanged), then scans them with Trivy. Publishing only happens from `main`.
 
