@@ -89,5 +89,3 @@
 * give publish-sif disk-cleanup headroom, matching build-push ([b02ef12](https://github.com/czimaginginstitute/relion-docker/commit/b02ef124f00cf53149abbd1bc9273a759d9505f5))
 * grant pull-requests: read so paths-filter can list PR-changed files ([c05abd5](https://github.com/czimaginginstitute/relion-docker/commit/c05abd5274167bc676a827a33aac0b8d2362c158))
 * log in to GHCR on PRs that will attempt the relion-zarr-sta build ([7d86bb7](https://github.com/czimaginginstitute/relion-docker/commit/7d86bb76d7dda8b07ac47f4151114073c9fe9dad))
-
-## Changelog

@@ -1,4 +1,3 @@
-ARG DEBIAN_FRONTEND=noninteractive
 ARG RELION_RELEASE=5.0
 ARG CUDA_VERSION=12.8.0
 
@@ -12,10 +11,16 @@ SHELL ["/bin/bash", "-l", "-c"]
 RUN micromamba create -n relion-zarr-sta python=3.11 -c conda-forge -y
 SHELL ["micromamba", "run", "-n", "relion-zarr-sta", "/bin/bash", "-l", "-c"]
 
-RUN pip install uv
-RUN uv pip install py2rely zarr-particle-tools
-WORKDIR /
-RUN pip cache purge
-RUN micromamba clean -afy
+RUN pip install --no-cache-dir uv
+RUN uv pip install --no-cache py2rely zarr-particle-tools
+# keep each conda package's license files, then drop the package cache
+RUN find "${MAMBA_ROOT_PREFIX}/pkgs" -path '*/info/licenses' -type d | while read -r d; do \
+      mkdir -p /opt/licenses/conda-zarr-sta && cp -r "$d" "/opt/licenses/conda-zarr-sta/$(basename "$(dirname "$(dirname "$d")")")"; \
+    done \
+ && test -n "$(ls -A /opt/licenses/conda-zarr-sta)" \
+ && micromamba clean -afy
+# the env lives under /home/relion; setuid/kernel-mount apptainer needs it world-readable
+RUN chmod 755 /home/relion
+WORKDIR /work
 RUN zarr-particle-pipeline --help
 RUN py2rely --help

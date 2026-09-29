@@ -3,8 +3,13 @@
 Ready-to-run RELION 5 images (with CUDA support) for Docker and Apptainer/HPC, including
 `relion-zarr-sta`, a Subtomogram Averaging (STA) variant for CryoET Data Portal / SLURM
 workflows. Images are published to [GitHub Container
-Registry](https://github.com/orgs/czimaginginstitute/packages) and [Docker
-Hub](https://hub.docker.com/r/jidaniel/relion).
+Registry](https://github.com/orgs/czimaginginstitute/packages) and Docker Hub
+([relion](https://hub.docker.com/r/jidaniel/relion),
+[relion-zarr-sta](https://hub.docker.com/r/jidaniel/relion-zarr-sta)).
+
+Requirements: an NVIDIA GPU with compute capability 8.0+ (A100 or newer; V100/T4 and older are
+not supported) and a host driver that supports the image's CUDA version (≥570 for `cuda12.8`,
+≥550 for `cuda12.4`).
 
 This project is under active development.
 
@@ -31,19 +36,26 @@ Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
 
    ```
    pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=client
-   relion-zarr-sta-client --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire-py2rely
+   relion-zarr-sta-client --sif relion-zarr-sta.sif --out ~/relion-shims/bin \
+       --bind /path/to/shared/storage --wire-py2rely
+   export PATH="$HOME/relion-shims/bin:$PATH"
    ```
 
-That's it: RELION and zarr-particle-tools' job commands now transparently run inside the
-container when py2rely's SLURM job scripts call them.
+   `--bind` is the storage your data lives on (repeatable). Put the SIF and the wrapper folder on
+   storage the compute nodes can see. Requires Python ≥3.10.
+
+RELION and zarr-particle-tools' job commands now run inside the container, both when you call
+them and when py2rely's SLURM job scripts do (`--wire-py2rely` adds the `export PATH` line to
+those scripts).
 
 ### What the client actually does
 
 Step 2 above generates a folder of small wrapper scripts, one per RELION/job binary (e.g.
-`relion_refine_mpi`, `zarr-particle-extract`), and puts that folder on `PATH`. Each wrapper has
+`relion_refine_mpi`, `zarr-particle-extract`); you put that folder first on `PATH`. Each wrapper has
 the same name as the real binary, so anything that calls that name (a SLURM job script, py2rely,
 you typing it in a shell) can't tell the difference; it just runs. Under the hood, the wrapper
-runs `apptainer exec relion-zarr-sta.sif <the real binary> "$@"`, passing through whatever
+runs `apptainer exec --nv [--bind …] /abs/path/relion-zarr-sta.sif <the real binary> "$@"`
+(zarr-particle-tools commands via `micromamba run -n relion-zarr-sta`), passing through whatever
 arguments it was called with. So the binary itself never has to exist natively on the machine;
 the wrapper stands in for it and transparently hands the work to the container.
 
@@ -53,6 +65,9 @@ container. So those two run natively (installed by `relion-zarr-sta-client` as r
 and only reach into the container for the actual RELION/job binaries once a job is running. See
 [`client/README.md`](client/README.md) for the full option list.
 
+MPI runs are limited to a single node: `mpirun` runs the container's OpenMPI inside one
+`apptainer exec`.
+
 ## Running locally with Docker
 
 ```
@@ -61,7 +76,8 @@ docker run --gpus all -it --rm -v /path/to/your/data:/work ghcr.io/czimaginginst
 ```
 
 `-v /path/to/your/data:/work` bind-mounts a local directory into the container at `/work`. The
-same applies to `relion-zarr-sta`:
+container runs as UID 1000 (`relion`), so the directory must be writable by it (or add
+`--user $(id -u):$(id -g)`). The same applies to `relion-zarr-sta`:
 
 ```
 docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
@@ -86,8 +102,11 @@ apptainer pull oras://ghcr.io/czimaginginstitute/relion-zarr-sta-sif:5.0-cuda12.
 Run with GPU access (`--nv`) and your data bind-mounted:
 
 ```
-apptainer exec --nv --bind /path/to/your/data:/work relion_5.1-cuda12.8.sif relion_refine --help
+apptainer exec --nv --bind /path/to/your/data:/work --pwd /work relion_5.1-cuda12.8.sif relion_refine --help
 ```
+
+The SIF filename depends on the pull: `docker://` saves `relion_5.1-cuda12.8.sif`, `oras://` saves
+`relion-sif_5.1-cuda12.8.sif` (or pass a name as the first argument).
 
 For `relion-zarr-sta` on a SLURM cluster, see the
 [Quickstart](#quickstart-run-relion-zarr-sta-on-your-hpc-cluster) above for the client-based
@@ -99,18 +118,27 @@ integration.
 
 This is the base RELION Docker image, which contains RELION with CUDA support and is ready to be run out of the box. It includes all necessary dependencies and is built from an NVIDIA CUDA base image. The Dockerfile sets up the environment for RELION by installing required environments and software packages, including the required conda environment to run RELION, CTFFIND and OpenMPI.
 
-Tags follow `<relion>-cuda<cuda>` and are built for the following combinations:
+Tags follow `<relion>-cuda<X.Y>` (also pushed as `-cuda<X.Y.Z>`, e.g. `5.0-cuda12.4.1`) and are
+built for the following combinations:
 
 | RELION | CUDA 12.4 | CUDA 12.8 |
 |--------|-----------|-----------|
 | 5.0    | `5.0-cuda12.4` | `5.0-cuda12.8` |
 | 5.1    | — | `5.1-cuda12.8` |
 
-RELION 5.0 images are compiled for `sm_80` with PTX, so newer GPUs run them via JIT. RELION 5.1 images emit native code for `sm_80/86/89/90/100/120` (Ampere through Blackwell, incl. B200/GB200) plus `compute_120` PTX.
+`relion-zarr-sta` (and its SIF) is built for RELION 5.0 only: `5.0-cuda12.4`, `5.0-cuda12.8`.
+Tags not listed here are legacy and are no longer rebuilt or scanned.
 
-RELION 5.0 images are built for a single architecture, `sm_80`, with the rest of the fleet covered by forward-compatible PTX. This is a limitation of RELION 5.0's build system, which uses the older CMake `FindCUDA` and accepts only one `CUDA_ARCH` value; RELION 5.1 switched to `CMAKE_CUDA_ARCHITECTURES`, which takes a list and lets us emit native code for every architecture at once.
+Tags are rolling: images rebuild weekly from the upstream `ver5.0`/`ver5.1` branches (for apt
+security fixes and upstream changes). The exact RELION commit is in
+`/opt/licenses/RELION-SOURCE-COMMIT.txt` and the `org.relion.source.revision` label; pin by digest
+for reproducibility.
 
-For all tags, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion.
+RELION 5.1 images emit native code for `sm_80/86/89/90/100/120` (Ampere through Blackwell, incl.
+B200/GB200) plus `compute_120` PTX. RELION 5.0 images are built for `sm_80` only, with newer GPUs
+covered by PTX JIT: RELION 5.0 uses CMake's older `FindCUDA`, which accepts a single `CUDA_ARCH`.
+
+For all tags, see https://github.com/orgs/czimaginginstitute/packages/container/package/relion.
 
 ### relion-zarr-sta
 
@@ -118,7 +146,8 @@ This Docker image is a derived image from the base RELION image, designed for ru
 - [py2rely](https://github.com/chanzuckerberg/py2rely): A Pythonic interface for automated RELION workflows for subtomogram averaging on SLURM HPC clusters.
 - [zarr-particle-tools](https://github.com/czimaginginstitute/zarr-particle-tools): Subtomogram extraction, reconstruction, CTF refinement, and Bayesian polishing for local files and the CryoET Data Portal.
 
-For all CUDA versions, see https://github.com/czimaginginstitute/relion-docker/pkgs/container/relion-zarr-sta.
+It starts in `/work` and runs as UID 1000, like `relion`. For all tags, see
+https://github.com/orgs/czimaginginstitute/packages/container/package/relion-zarr-sta.
 
 ## Licensing
 

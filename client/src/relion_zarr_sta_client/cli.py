@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import shutil
 import stat
@@ -46,7 +47,7 @@ def wire_py2rely(outdir: Path) -> None:
         )
         raise SystemExit(1)
 
-    path_line = f'export PATH="{outdir}:$PATH"'
+    path_line = f'export PATH={shlex.quote(str(outdir))}:"$PATH"'
     config = {"python_load": path_line, "relion_load": path_line}
 
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -64,7 +65,7 @@ def main() -> None:
         prog="relion-zarr-sta-client",
         description=(
             "Native client for relion-zarr-sta. Installs py2rely and zarr-particle-tools "
-            "(orchestration and job commands run natively -- sbatch needs the host's SLURM "
+            "(py2rely and zarr-particle-pipeline run natively -- sbatch needs the host's SLURM "
             "setup) and generates PATH shims that route RELION and zarr-particle-tools job "
             "binaries through `apptainer exec` into the container, so job scripts written for "
             "a native install work unmodified."
@@ -97,10 +98,14 @@ def main() -> None:
     sif = Path(args.sif).expanduser().resolve()
     if not sif.is_file():
         parser.error(f"--sif {args.sif}: no such file")
-    binds = [str(Path(b).expanduser().resolve()) for b in args.bind]
+    # absolute but not symlink-resolved, so job scripts can use the path as typed
+    binds = [os.path.abspath(os.path.expanduser(b)) for b in args.bind]
     missing = [b for b in binds if not Path(b).exists()]
     if missing:
         parser.error(f"--bind path(s) not found: {', '.join(missing)}")
+    bad = [b for b in binds if "," in b or ":" in b]
+    if bad:
+        parser.error(f"--bind paths can't contain ',' or ':': {', '.join(bad)}")
 
     outdir = Path(args.out).expanduser().resolve()
     count = generate_shims(sif, outdir, binds, args.env_name)
@@ -110,7 +115,7 @@ def main() -> None:
         wire_py2rely(outdir)
         print("Wired py2rely's python_load/relion_load to the shim directory")
     else:
-        print(f'To use with py2rely, set python_load/relion_load to: export PATH="{outdir}:$PATH"')
+        print(f"Add to PATH (or set py2rely's python_load/relion_load to): export PATH={shlex.quote(str(outdir))}:\"$PATH\"")
 
 
 if __name__ == "__main__":
