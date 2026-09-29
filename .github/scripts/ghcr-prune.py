@@ -77,29 +77,28 @@ def plan(org, pkg, mode, min_age, token):
             manifests[d] = manifest(org, pkg, d, reg)
         return manifests[d]
 
-    while queue:  # roots + index children, recursively
-        d = queue.pop()
-        if d in protected:
-            continue
-        if d not in by_digest:
-            raise SystemExit(f"{pkg}: referenced digest {d} not in version list; aborting")
-        protected.add(d)
-        queue += [c["digest"] for c in (fetch(d).get("manifests") or [])]
+    def walk():  # protect queued digests and their index children, recursively
+        while queue:
+            d = queue.pop()
+            if d in protected:
+                continue
+            if d not in by_digest:
+                raise SystemExit(f"{pkg}: referenced digest {d} not in version list; aborting")
+            protected.add(d)
+            queue.extend(c["digest"] for c in (fetch(d).get("manifests") or []))
 
-    if mode == "image":  # attestations (and their indexes) pointing at protected manifests
-        for d in by_digest:
-            if d not in protected:
-                fetch(d)
-        changed = True
-        while changed:
-            changed = False
-            for d, m in manifests.items():
-                if d in protected:
-                    continue
-                refs = [(m.get("subject") or {}).get("digest")] + [c["digest"] for c in (m.get("manifests") or [])]
-                if any(r in protected for r in refs if r):
-                    protected.add(d)
-                    changed = True
+    walk()
+    # referrers (attestations, signatures) whose subject is protected, plus their children
+    for d in by_digest:
+        fetch(d)
+    changed = True
+    while changed:
+        changed = False
+        for d, m in manifests.items():
+            if d not in protected and (m.get("subject") or {}).get("digest") in protected:
+                queue.append(d)
+                walk()
+                changed = True
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=min_age)
     return [v for v in versions if v["name"] not in protected

@@ -198,7 +198,7 @@ jobs:
 
       - name: Build & Push RELION-Zarr-STA Image
         # push only on main; build-only on PRs touching relevant files
-        if: ${{ matrix.build_relion_zarr_sta && (github.ref == 'refs/heads/main' || needs.changes.outputs.relion_zarr_sta == 'true') }}
+        if: ${{ matrix.build_relion_zarr_sta && (github.event_name != 'pull_request' || needs.changes.outputs.relion_zarr_sta == 'true') }}
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           file: extras/Dockerfile.relion-zarr-sta

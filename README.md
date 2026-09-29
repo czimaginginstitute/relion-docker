@@ -45,13 +45,15 @@ Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
    storage the compute nodes can see. Requires Python ≥3.10.
 
 RELION and zarr-particle-tools' job commands now run inside the container, both when you call
-them and when py2rely's SLURM job scripts do (`--wire-py2rely` adds the `export PATH` line to
-those scripts).
+them and when py2rely's SLURM job scripts do. `--wire-py2rely` **replaces** py2rely's
+`python_load`/`relion_load` with the `export PATH` line, dropping any existing module/venv lines
+(see [`client/README.md`](client/README.md)).
 
 ### What the client actually does
 
-Step 2 above generates a folder of small wrapper scripts, one per RELION/job binary (e.g.
-`relion_refine_mpi`, `zarr-particle-extract`); you put that folder first on `PATH`. Each wrapper has
+Step 2 above generates a folder of small wrapper scripts: `mpirun`, every `relion_*` binary in
+the image, and the zarr-particle-tools job commands (e.g. `relion_refine_mpi`,
+`zarr-particle-extract`); you put that folder first on `PATH`. Each wrapper has
 the same name as the real binary, so anything that calls that name (a SLURM job script, py2rely,
 you typing it in a shell) can't tell the difference; it just runs. Under the hood, the wrapper
 runs `apptainer exec --nv [--bind …] /abs/path/relion-zarr-sta.sif <the real binary> "$@"`
@@ -77,7 +79,7 @@ docker run --gpus all -it --rm -v /path/to/your/data:/work ghcr.io/czimaginginst
 
 `-v /path/to/your/data:/work` bind-mounts a local directory into the container at `/work`. The
 container runs as UID 1000 (`relion`), so the directory must be writable by it (or add
-`--user $(id -u):$(id -g)`). The same applies to `relion-zarr-sta`:
+`--user $(id -u):$(id -g) -e HOME=/work`, so model-weight downloads have a writable home). The same applies to `relion-zarr-sta`:
 
 ```
 docker pull ghcr.io/czimaginginstitute/relion-zarr-sta:5.0-cuda12.8.0
@@ -116,9 +118,12 @@ integration.
 
 ### relion
 
-This is the base RELION Docker image, which contains RELION with CUDA support and is ready to be run out of the box. It includes all necessary dependencies and is built from an NVIDIA CUDA base image. The Dockerfile sets up the environment for RELION by installing required environments and software packages, including the required conda environment to run RELION, CTFFIND and OpenMPI.
+The base image: RELION with CUDA, RELION's conda environment, CTFFIND and OpenMPI, on an NVIDIA
+CUDA base image. It's a headless build (no `relion` GUI). Model weights for Blush, ModelAngelo,
+classranker etc. download on first use, so the first run needs internet access.
 
-Tags follow `<relion>-cuda<X.Y>` (also pushed as `-cuda<X.Y.Z>`, e.g. `5.0-cuda12.4.1`) and are
+Tags follow `<relion>-cuda<X.Y>` (Docker images are also pushed as `-cuda<X.Y.Z>`, e.g.
+`5.0-cuda12.4.1`; SIFs use `-cuda<X.Y>` only) and are
 built for the following combinations:
 
 | RELION | CUDA 12.4 | CUDA 12.8 |
@@ -131,8 +136,9 @@ Tags not listed here are legacy and are no longer rebuilt or scanned.
 
 Tags are rolling: images rebuild weekly from the upstream `ver5.0`/`ver5.1` branches (for apt
 security fixes and upstream changes). The exact RELION commit is in
-`/opt/licenses/RELION-SOURCE-COMMIT.txt` and the `org.relion.source.revision` label; pin by digest
-for reproducibility.
+`/opt/licenses/RELION-SOURCE-COMMIT.txt` and the `org.relion.source.revision` label. Superseded
+digests are deleted from GHCR about 14 days after they're replaced, so for long-term
+reproducibility keep your own copy (`docker save`, or the pulled `.sif`).
 
 RELION 5.1 images emit native code for `sm_80/86/89/90/100/120` (Ampere through Blackwell, incl.
 B200/GB200) plus `compute_120` PTX. RELION 5.0 images are built for `sm_80` only, with newer GPUs

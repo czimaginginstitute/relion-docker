@@ -73,7 +73,7 @@ RUN f=/usr/local/bin/relion_python_trace_amyloids; [ ! -e "$f" ] || sed -i 's|^r
 RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
     pip install --no-cache-dir "setuptools>=78.1.1,<81" \
  && find "${MAMBA_ROOT_PREFIX}/pkgs" -path '*/info/licenses' -type d | while read -r d; do \
-      mkdir -p /opt/licenses/conda && cp -r "$d" "/opt/licenses/conda/$(basename "$(dirname "$(dirname "$d")")")"; \
+      mkdir -p /opt/licenses/conda && cp -r "$d" "/opt/licenses/conda/$(basename "$(dirname "$(dirname "$d")")")" || exit 1; \
     done \
  && test -n "$(ls -A /opt/licenses/conda)" \
  && rm -rf "${MAMBA_ROOT_PREFIX}/pkgs"

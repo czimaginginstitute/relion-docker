@@ -1,4 +1,5 @@
-# Binaries on the container's system PATH (RELION + mpirun), called directly.
+# Fallback when the SIF can't be listed: binaries on the container's system PATH, called directly.
+# Normally every relion_* in the image's /usr/local/bin is wrapped (see cli.list_system_bins).
 SYSTEM_BINS = [
     "mpirun",
     "relion_refine",
