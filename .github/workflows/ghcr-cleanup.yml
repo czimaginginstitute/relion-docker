@@ -1,0 +1,53 @@
+name: GHCR cleanup
+
+# Deletes GHCR versions no tagged version references (see .github/scripts/ghcr-prune.py).
+on:
+  schedule:
+    - cron: '17 14 * * 1'   # after the Monday rebuild
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List only, delete nothing'
+        type: boolean
+        default: true
+  pull_request:
+    branches: [ main ]
+    paths: [ '.github/workflows/ghcr-cleanup.yml', '.github/scripts/ghcr-prune.py' ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - { package: relion-buildcache, mode: cache, min_age_hours: 24 }
+          - { package: relion, mode: image, min_age_hours: 336 }
+          - { package: relion-zarr-sta, mode: image, min_age_hours: 336 }
+          - { package: relion-sif, mode: sif, min_age_hours: 336 }
+          - { package: relion-zarr-sta-sif, mode: sif, min_age_hours: 336 }
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # PRs always dry-run; schedule deletes; manual runs default to dry-run
+      DELETE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Prune ${{ matrix.package }}
+        run: |
+          python3 .github/scripts/ghcr-prune.py --org "${{ github.repository_owner }}" \
+            --package "${{ matrix.package }}" --mode "${{ matrix.mode }}" \
+            --min-age-hours "${{ matrix.min_age_hours }}" $([ "$DELETE" = true ] && echo --delete)

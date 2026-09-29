@@ -7,7 +7,7 @@ name = "relion-zarr-sta-client"
 version = "0.1.0"
 description = "Native client for relion-zarr-sta: py2rely + zarr-particle-tools on the host, with PATH shims that route RELION/job binaries through the container"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "py2rely",

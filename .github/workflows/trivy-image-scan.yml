@@ -1,10 +1,13 @@
 name: Trivy image scan
 
-# HIGH/CRITICAL scan of the published images. Run before making packages public; weekly after.
+# Scan of the published images; report all severities, fail on CRITICAL.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '41 4 * * 1'
+  # scan right after each successful main build (incl. the weekly rebuild)
+  workflow_run:
+    workflows: [ "Build & Push RELION (CUDA) to Docker Hub & GitHub Packages" ]
+    types: [ completed ]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -12,6 +15,7 @@ permissions:
 jobs:
   scan:
     name: Scan ${{ matrix.image.name }}:${{ matrix.image.tag }}
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: read   # upload-sarif reads the run on private repos
@@ -34,7 +38,7 @@ jobs:
           remove-browsers: true
 
       - name: Checkout   # for .trivyignore.yaml
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0

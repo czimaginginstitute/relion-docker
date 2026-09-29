@@ -15,17 +15,21 @@ Thank you for your interest in contributing to relion-docker!
 ```bash
 git clone git@github.com:czimaginginstitute/relion-docker.git
 cd relion-docker
+git lfs install && git lfs pull   # the vendored CTFFIND tarball is in Git LFS
 ```
 
-Build an image locally:
+Build an image locally (CUDA_ARCH as in CI; the default is RELION's own fallback):
 
 ```bash
-docker build -f Dockerfile.relion -t relion:test .
+docker build -f Dockerfile.relion --build-arg CUDA_ARCH=80 -t relion:test .
+docker build -f Dockerfile.relion --build-arg RELION_REF=ver5.1 \
+  --build-arg CUDA_ARCH='80-real;86-real;89-real;90-real;100-real;120-real;120-virtual' -t relion:test-5.1 .
 docker build -f extras/Dockerfile.relion-zarr-sta -t relion-zarr-sta:test .
 ```
 
-`extras/Dockerfile.relion-zarr-sta` builds `FROM` the published `ghcr.io/czimaginginstitute/relion` image,
-not your local `relion:test`.
+`extras/Dockerfile.relion-zarr-sta` builds `FROM` the published `ghcr.io/czimaginginstitute/relion`
+image, not your local `relion:test`. To build on your local image instead, tag it first:
+`docker tag relion:test ghcr.io/czimaginginstitute/relion:5.0-cuda12.8.0`.
 
 To test the HPC path, convert the local image with Apptainer (on the same machine as Docker):
 
@@ -44,8 +48,9 @@ apptainer exec --nv relion-zarr-sta.sif relion_refine --version
    command, not just that the build succeeds
 4. Open a pull request against `main`, describing what changed and why, and how you tested it
 
-CI builds every image on pull requests that touch it, and (on merge to `main`) pushes the images
-and publishes their SIFs.
+CI builds every image on pull requests that touch it. On merge to `main`, and weekly (Monday
+06:23 UTC), it pushes the images and publishes their SIFs (skipping SIFs whose image is
+unchanged), then scans them with Trivy. Publishing only happens from `main`.
 
 ### Commit / PR title convention
 

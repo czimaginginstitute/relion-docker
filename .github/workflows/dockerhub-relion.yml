@@ -14,7 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RELION_REF_DEFAULT: ver5.0
   # Dependabot PRs get no Actions secrets; the fallback only names local (unpushed) PR builds
   DOCKERHUB_RELION_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME || 'dependabot-pr' }}/relion
   DOCKERHUB_RELION_ZARR_STA_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME || 'dependabot-pr' }}/relion-zarr-sta
@@ -34,9 +33,11 @@ jobs:
       relion_zarr_sta: ${{ steps.filter.outputs.relion_zarr_sta }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check for image-relevant changes
+        # PR-only: paths-filter has no base on schedule/dispatch runs, and non-PR runs always build
+        if: github.event_name == 'pull_request'
         id: filter
         uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
         with:
@@ -110,7 +111,7 @@ jobs:
           docker system df
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true   # materialize the vendored CTFFIND tarball (not just its LFS pointer)
 
@@ -135,7 +136,7 @@ jobs:
       - name: Compute tags and labels
         id: meta
         run: |
-          RELION_REF="${{ matrix.relion_ref || env.RELION_REF_DEFAULT }}"
+          RELION_REF="${{ matrix.relion_ref }}"
           echo "RELION_RELEASE=${RELION_REF#ver}" >> $GITHUB_ENV
           CUDA_VERSION="${{ matrix.cuda }}"
           CUDA_MAJOR_MINOR="$(echo "${CUDA_VERSION}" | awk -F. '{print $1"."$2}')"
@@ -144,6 +145,7 @@ jobs:
 
           # Resolve RELION ref to its commit (source-revision label; pins the clone so cache busts on upstream moves)
           RELION_SHA="$(git ls-remote https://github.com/3dem/relion.git "${RELION_REF}" | head -n1 | cut -f1)"
+          [ -n "$RELION_SHA" ] || { echo "could not resolve ${RELION_REF}"; exit 1; }
 
           echo "relion_ref=${RELION_REF}" >> $GITHUB_OUTPUT
           echo "relion_sha=${RELION_SHA}" >> $GITHUB_OUTPUT
@@ -174,7 +176,7 @@ jobs:
           labels: |
             org.opencontainers.image.title=relion
             org.opencontainers.image.description=RELION built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
-            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.relion.source.revision=${{ steps.meta.outputs.relion_sha }}
           # registry cache: no 10GB cap like type=gha. ignore-error so read-only tokens (Dependabot) still build.
@@ -214,7 +216,7 @@ jobs:
           labels: |
             org.opencontainers.image.title=relion-zarr-sta
             org.opencontainers.image.description=RELION with zarr-particle-tools and py2rely for CryoET Data Portal STA workflows, built with CUDA ${{ steps.meta.outputs.cuda_version }} (ref ${{ steps.meta.outputs.relion_ref }})
-            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.relion.source.revision=${{ steps.meta.outputs.relion_sha }}
           cache-from: type=registry,ref=${{ env.GHCR_BUILDCACHE }}:relion-zarr-sta-${{ steps.meta.outputs.tag_full }}
@@ -240,7 +242,7 @@ jobs:
         # keep in sync with build-push tags (tag_main form)
         tag: [ "5.1-cuda12.8", "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/scripts
 
@@ -321,7 +323,7 @@ jobs:
         # only ver5.0 builds relion-zarr-sta (see build-push's matrix)
         tag: [ "5.0-cuda12.8", "5.0-cuda12.4" ]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/scripts
 
