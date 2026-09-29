@@ -72,8 +72,9 @@ adds its own env with py2rely and zarr-particle-tools) and apt packages. Each ke
 ships its own license text inside the image — apt packages at `/usr/share/doc/<pkg>/copyright`,
 conda packages under `/opt/licenses/conda/<name>-<version>-<build>/` (relion-zarr-sta's env:
 `/opt/licenses/conda-zarr-sta/`), pip packages in their `*.dist-info/` directory.
-micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`; it is a static
-binary that also bundles libsolv, libarchive, libcurl, OpenSSL and others (BSD/MIT/Apache-2.0). `relion-zarr-sta` adds py2rely and
+micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`; it is a single
+binary that statically bundles libsolv, libarchive, libcurl, OpenSSL, krb5 and others
+(BSD/MIT/Apache-2.0), and links dynamically only against the image's glibc. `relion-zarr-sta` adds py2rely and
 zarr-particle-tools, both MIT-licensed.
 
 ## Corresponding source for GPL/AGPL components
@@ -99,6 +100,8 @@ corresponding source for these components on request at opensource@biohub.org.**
   Computing and the Qt Project.
 - **glibc** (LGPL-2.1-or-later), statically linked into the upstream `ctffind` binary (see above);
   source from the GNU project.
+- 5.1 images only: `opencv-python` (from RELION's upstream env) bundles its own Qt 5 and FFmpeg
+  libraries (LGPL); see its `dist-info/LICENSE-3RD-PARTY.txt`.
 - **conda-forge GPL packages** in both envs, e.g. `readline` (GPL-3.0) and binutils'
   `ld_impl_linux-64` (GPL-3.0) — installed unmodified; corresponding source is linked from each
   package's conda-forge feedstock, and license texts are under `/opt/licenses/conda*/`.
