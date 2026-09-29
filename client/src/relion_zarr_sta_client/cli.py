@@ -50,10 +50,16 @@ def _write_shim(outdir: Path, name: str, runtime: str, sif: Path, binds: list[st
     )
     # write a temp file and rename over the target: never writes through a symlink
     fd, tmp = tempfile.mkstemp(dir=outdir, prefix=f".{name}.")
-    with os.fdopen(fd, "w") as f:
-        f.write(text)
-    os.chmod(tmp, 0o755)
-    os.replace(tmp, outdir / name)
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o755)
+        os.replace(tmp, outdir / name)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
 
 
 def list_system_bins(runtime: str, sif: Path) -> list[str]:
@@ -74,8 +80,13 @@ def list_system_bins(runtime: str, sif: Path) -> list[str]:
 def generate_shims(sif: Path, outdir: Path, binds: list[str], env_name: str, force: bool) -> int:
     runtime = find_runtime()
     names = list_system_bins(runtime, sif)
+    if outdir.exists() and not outdir.is_dir():
+        raise SystemExit(f"error: --out {outdir} exists and is not a directory")
     outdir.mkdir(parents=True, exist_ok=True)
     wanted = set(names) | set(ENV_BINS)
+    dirs = sorted(n for n in wanted if (outdir / n).is_dir() and not (outdir / n).is_symlink())
+    if dirs:
+        raise SystemExit(f"error: {outdir} has directories named like wrappers ({', '.join(dirs)}); remove them")
     clash = sorted(n for n in wanted if os.path.lexists(outdir / n) and not _is_ours(outdir / n))
     if clash and not force:
         raise SystemExit(
