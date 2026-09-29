@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# SIF publish helper (GHCR registry API; needs GH_TOKEN with packages read/write).
-#   key <repo> <tag>            -> 12-char hash of the amd64 layers + runtime config (stable across cached rebuilds)
-#   current <sif_repo> <tag> <key> -> exit 0 if <tag> and <tag>-src-<key> point at the same SIF
-#   mark <sif_repo> <tag> <key>    -> add tag <tag>-src-<key> to the SIF currently at <tag>
-# repos are "owner/name" on ghcr.io
+# GHCR helper for SIF publishing (GH_TOKEN; repos are owner/name):
+#   key <repo> <tag>               hash of amd64 layers + runtime config
+#   current <sif_repo> <tag> <key> exit 0 if <tag> and <tag>-src-<key> are the same SIF
+#   mark <sif_repo> <tag> <key>    tag the SIF at <tag> as <tag>-src-<key>
 set -euo pipefail
 mode=$1 repo=$2 tag=$3 key=${4:-}
 accept='application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json'

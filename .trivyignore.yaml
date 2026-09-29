@@ -1,6 +1,5 @@
 vulnerabilities:
-  # torch 2.0.1 is pinned by upstream RELION ver5.0 (environment.yml); present in relion:5.0*
-  # and relion-zarr-sta*. The 5.1 images ship a fixed torch. Revisit when upstream bumps torch.
+  # torch 2.0.1 pinned by upstream RELION ver5.0 (relion:5.0*, relion-zarr-sta*); 5.1 is fixed
   - id: CVE-2025-32434
     statement: torch.load RCE; needs an untrusted checkpoint, RELION loads only its own upstream weights (downloaded on first use).
     purls:
@@ -14,8 +13,7 @@ vulnerabilities:
     purls:
       - pkg:pypi/torch@2.0.1
 
-  # Copies vendored inside pip (pip/_vendor), not importable packages. No pip release vendors
-  # fixed versions yet (pip main has msgpack 1.2.1). Remove once a pip release picks them up.
+  # pip's own vendored copies (pip/_vendor); drop once a pip release vendors fixed versions
   - id: GHSA-6v7p-g79w-8964
     statement: SEGV is in the msgpack C extension; pip vendors the pure-Python fallback only.
     purls:

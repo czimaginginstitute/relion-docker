@@ -26,14 +26,12 @@ ACCEPT = ",".join([
 ])
 SRC_TAG = re.compile(r"-src-[0-9a-f]{12}$")
 
-
 def request(url, token, method="GET", accept="application/vnd.github+json", auth="Bearer"):
     req = urllib.request.Request(url, method=method, headers={
         "Authorization": f"{auth} {token}", "Accept": accept, "X-GitHub-Api-Version": "2022-11-28"})
     with urllib.request.urlopen(req, timeout=60) as r:
         body = r.read()
         return json.loads(body) if body else None, r.headers
-
 
 def list_versions(org, pkg, token):
     out, page = [], 1
@@ -44,24 +42,20 @@ def list_versions(org, pkg, token):
             return out
         page += 1
 
-
 def registry_token(org, pkg, gh_token):
     basic = base64.b64encode(f"x:{gh_token}".encode()).decode()
     data, _ = request(f"https://ghcr.io/token?scope=repository:{org}/{pkg}:pull", basic, auth="Basic")
     return data["token"]
 
-
 def manifest(org, pkg, digest, reg_token):
     data, _ = request(f"https://ghcr.io/v2/{org}/{pkg}/manifests/{digest}", reg_token, accept=ACCEPT)
     return data
-
 
 def is_root(v, mode):
     tags = v["metadata"]["container"]["tags"]
     if mode == "sif":
         return any(not SRC_TAG.search(t) for t in tags)
     return bool(tags)
-
 
 def plan(org, pkg, mode, min_age, token):
     versions = list_versions(org, pkg, token)
@@ -77,7 +71,7 @@ def plan(org, pkg, mode, min_age, token):
             manifests[d] = manifest(org, pkg, d, reg)
         return manifests[d]
 
-    def walk():  # protect queued digests and their index children, recursively
+    def walk():  # queued digests + index children
         while queue:
             d = queue.pop()
             if d in protected:
@@ -88,7 +82,7 @@ def plan(org, pkg, mode, min_age, token):
             queue.extend(c["digest"] for c in (fetch(d).get("manifests") or []))
 
     walk()
-    # referrers (attestations, signatures) whose subject is protected, plus their children
+    # referrers (attestations etc.) of protected manifests
     for d in by_digest:
         fetch(d)
     changed = True
@@ -103,7 +97,6 @@ def plan(org, pkg, mode, min_age, token):
     cutoff = datetime.now(timezone.utc) - timedelta(hours=min_age)
     return [v for v in versions if v["name"] not in protected
             and datetime.fromisoformat(v["created_at"].replace("Z", "+00:00")) < cutoff], len(versions), len(protected)
-
 
 def main():
     p = argparse.ArgumentParser()
@@ -122,7 +115,6 @@ def main():
             print(f"  would delete {v['id']} {v['name'][:19]} {v['created_at']} {v['metadata']['container']['tags']}")
         return
 
-    # re-check right before deleting; drop anything that became protected meanwhile
     recheck, _, _ = plan(a.org, a.package, a.mode, a.min_age_hours, token)
     ids = {v["id"] for v in recheck}
     for v in cands:
@@ -135,7 +127,6 @@ def main():
         except urllib.error.HTTPError as e:
             print(f"  failed {v['id']}: {e.code} {e.reason}", file=sys.stderr)
             sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
