@@ -123,7 +123,8 @@ CUDA base image. It's a headless build (no `relion` GUI). Model weights for Blus
 classranker etc. download on first use, so the first run needs internet access.
 
 Tags follow `<relion>-cuda<X.Y>` (Docker images are also pushed as `-cuda<X.Y.Z>`, e.g.
-`5.0-cuda12.4.1`; SIFs use `-cuda<X.Y>` only) and are
+`5.0-cuda12.4.1`; SIFs use `-cuda<X.Y>` only, plus internal `<tag>-src-<hash>` tags — pull the
+plain tag) and are
 built for the following combinations:
 
 | RELION | CUDA 12.4 | CUDA 12.8 |
@@ -136,9 +137,10 @@ Tags not listed here are legacy and are no longer rebuilt or scanned.
 
 Tags are rolling: images rebuild weekly from the upstream `ver5.0`/`ver5.1` branches (for apt
 security fixes and upstream changes). The exact RELION commit is in
-`/opt/licenses/RELION-SOURCE-COMMIT.txt` and the `org.relion.source.revision` label. Superseded
-digests are deleted from GHCR about 14 days after they're replaced, so for long-term
-reproducibility keep your own copy (`docker save`, or the pulled `.sif`).
+`/opt/licenses/RELION-SOURCE-COMMIT.txt` and the `org.relion.source.revision` label. A weekly
+cleanup deletes superseded digests from GHCR once they're 14+ days old, counted from when they
+were built; with weekly rebuilds that's usually about a week after they're replaced. For
+long-term reproducibility keep your own copy (`docker save`, or the pulled `.sif`).
 
 RELION 5.1 images emit native code for `sm_80/86/89/90/100/120` (Ampere through Blackwell, incl.
 B200/GB200) plus `compute_120` PTX. RELION 5.0 images are built for `sm_80` only, with newer GPUs

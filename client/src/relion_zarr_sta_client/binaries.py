@@ -1,17 +1,3 @@
-# Fallback when the SIF can't be listed: binaries on the container's system PATH, called directly.
-# Normally every relion_* in the image's /usr/local/bin is wrapped (see cli.list_system_bins).
-SYSTEM_BINS = [
-    "mpirun",
-    "relion_refine",
-    "relion_refine_mpi",
-    "relion_mask_create",
-    "relion_postprocess",
-    "relion_tomo_refine_ctf",
-    "relion_tomo_align",
-    "relion_reconstruct",
-    "relion_reconstruct_mpi",
-]
-
 # zarr-particle-tools job binaries that live inside the image's micromamba env, need
 # `micromamba run -n`. py2rely and zarr-particle-pipeline are deliberately excluded: they call
 # `sbatch` themselves, which needs the host's SLURM/identity setup and doesn't work run this way.

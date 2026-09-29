@@ -16,5 +16,6 @@ interpreter that RELION does not use. The 5.1 `relion` image ships PyTorch 2.7.1
 `.trivyignore.yaml` also suppresses GHSA-6v7p-g79w-8964 (msgpack) and CVE-2025-47273 (setuptools),
 both in pip's own vendored copies, which aren't used at runtime.
 
-Images are scanned with Trivy after every main build (and on demand): all severities are
-reported to code scanning, and a fixable, non-ignored CRITICAL finding fails the scan.
+Images are scanned with Trivy after every main build (and on demand): fixable findings of every
+severity are reported to code scanning (unfixed ones are left out), and a fixable, non-ignored
+CRITICAL finding fails the scan.

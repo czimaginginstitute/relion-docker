@@ -19,7 +19,9 @@ must come first on `PATH`.
 
 ## Install
 
-Requires Python ≥3.10.
+Requires Python ≥3.10, and `apptainer` (or `singularity`) on `PATH` on both the login node and
+the compute nodes: the client lists the SIF's binaries with it, and every wrapper calls it. If you
+load it with a module in py2rely's `python_load`, re-add that line after `--wire-py2rely`.
 
 ```
 pip install git+https://github.com/czimaginginstitute/relion-docker.git#subdirectory=client
@@ -42,8 +44,8 @@ them **together with** the `export PATH=…` line (it replaces each value, it do
 ## Options
 
 - `--sif PATH` (required): the relion-zarr-sta SIF; must exist. Stored as an absolute path
-  (symlinks resolved). The client lists its `relion_*` binaries with `apptainer exec`; without
-  Apptainer it wraps a default set.
+  (symlinks resolved). The client lists its `relion_*` binaries with `apptainer exec`, and on
+  re-runs removes wrappers it generated earlier that the image no longer has.
 - `--out DIR` (required): directory to write the wrappers to.
 - `--bind PATH`: host path bind-mounted into the container at the same path (repeatable; none by default); must exist. Set this to the shared storage your data lives under.
 Stored as an absolute path as typed (symlinks aren't resolved); can't contain `,` or `:`.
