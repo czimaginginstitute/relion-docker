@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SIF publish helper (GHCR registry API; needs GH_TOKEN with packages read/write).
-#   key <repo> <tag>            -> 12-char hash of the amd64 layer digests (stable across cached rebuilds)
+#   key <repo> <tag>            -> 12-char hash of the amd64 layers + runtime config (stable across cached rebuilds)
 #   current <sif_repo> <tag> <key> -> exit 0 if <tag> and <tag>-src-<key> point at the same SIF
 #   mark <sif_repo> <tag> <key>    -> add tag <tag>-src-<key> to the SIF currently at <tag>
 # repos are "owner/name" on ghcr.io
@@ -18,7 +18,9 @@ case $mode in
       d=$(jq -r '[.manifests[] | select(.platform.architecture=="amd64")][0].digest' <<<"$m")
       m=$(api "https://ghcr.io/v2/${repo}/manifests/${d}")
     fi
-    jq -r '.layers[].digest' <<<"$m" | sha256sum | cut -c1-12 ;;
+    cfg=$(api "https://ghcr.io/v2/${repo}/blobs/$(jq -r .config.digest <<<"$m")" -L)
+    { jq -r '.layers[].digest' <<<"$m"
+      jq -cS '.config | {Env, User, WorkingDir, Entrypoint, Cmd}' <<<"$cfg"; } | sha256sum | cut -c1-12 ;;
   current)
     a=$(digest "$tag" || true); b=$(digest "${tag}-src-${key}" || true)
     [ -n "$a" ] && [ "$a" = "$b" ] ;;
