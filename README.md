@@ -106,7 +106,7 @@ Tags follow `<relion>-cuda<cuda>` and are built for the following combinations:
 | 5.0    | `5.0-cuda12.4` | `5.0-cuda12.8` |
 | 5.1    | — | `5.1-cuda12.8` |
 
-RELION 5.0 images are compiled for `sm_80` with PTX, so newer GPUs run them via JIT. RELION 5.1 images emit native code for `sm_80/86/89/90/120` plus `compute_120` PTX.
+RELION 5.0 images are compiled for `sm_80` with PTX, so newer GPUs run them via JIT. RELION 5.1 images emit native code for `sm_80/86/89/90/100/120` (Ampere through Blackwell, incl. B200/GB200) plus `compute_120` PTX.
 
 RELION 5.0 images are built for a single architecture, `sm_80`, with the rest of the fleet covered by forward-compatible PTX. This is a limitation of RELION 5.0's build system, which uses the older CMake `FindCUDA` and accepts only one `CUDA_ARCH` value; RELION 5.1 switched to `CMAKE_CUDA_ARCHITECTURES`, which takes a list and lets us emit native code for every architecture at once.
 
