@@ -296,7 +296,7 @@ jobs:
       - name: Convert pushed image to SIF and publish
         if: steps.check.outputs.skip != 'true'
         run: |
-          apptainer pull "$SIF_PATH" "docker://docker.io/${{ env.DOCKERHUB_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
+          apptainer pull "$SIF_PATH" "docker://${{ env.GHCR_RELION_IMAGE_NAME }}:${{ matrix.tag }}"
           apptainer push "$SIF_PATH" "oras://ghcr.io/${{ github.repository_owner }}/relion-sif:${{ matrix.tag }}"
 
       - name: Tag SIF with its source layer key
