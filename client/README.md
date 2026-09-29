@@ -37,5 +37,5 @@ relion-zarr-sta-client --sif relion-zarr-sta.sif --out ~/relion-shims/bin --wire
 
 ## Options
 
-- `--bind PATH`: bind-mounted into the container at the same path (default: `/data`); set this to whatever shared storage path your data and SIF actually live under.
+- `--bind PATH`: host path bind-mounted into the container at the same path (repeatable; none by default). Set this to the shared storage your data lives under. `--sif` and `--bind` are stored as absolute paths.
 - `--env-name NAME`: micromamba env name inside the image for zarr-particle-tools' job commands (default: `relion-zarr-sta`).
