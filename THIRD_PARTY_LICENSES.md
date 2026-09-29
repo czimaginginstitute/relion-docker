@@ -8,8 +8,10 @@ This file is bundled inside the images themselves at `/opt/licenses/THIRD_PARTY_
 alongside RELION's own license text (`/opt/licenses/RELION-LICENSE`) and the exact upstream
 RELION commit that was compiled in (`/opt/licenses/RELION-SOURCE-COMMIT.txt`, also recorded as
 the `org.relion.source.revision` image label). Each apt package additionally carries its own
-`/usr/share/doc/<pkg>/copyright`, each Python package its `*.dist-info/` license, and the
-NVIDIA CUDA base image its EULA at `/NGC-DL-CONTAINER-LICENSE`.
+`/usr/share/doc/<pkg>/copyright`, each conda package its license files under
+`/opt/licenses/conda/<pkg>/`, each pip package its `*.dist-info/` license, micromamba its
+BSD-3-Clause license at `/opt/licenses/MICROMAMBA-LICENSE`, and the NVIDIA CUDA base image its
+EULA at `/NGC-DL-CONTAINER-LICENSE`.
 
 ## RELION
 
@@ -64,7 +66,8 @@ a file included in the tarball.
 Both images also install a conda/pip environment (PyTorch, CTFFIND's runtime dependencies,
 py2rely, zarr-particle-tools, etc.) and apt packages. Each keeps its own upstream license and
 ships its own license text inside the image — apt packages at `/usr/share/doc/<pkg>/copyright`,
-Python packages in their `*.dist-info/` directory. `relion-zarr-sta` adds py2rely and
+conda packages under `/opt/licenses/conda/<pkg>/`, pip packages in their `*.dist-info/` directory.
+micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`. `relion-zarr-sta` adds py2rely and
 zarr-particle-tools, both MIT-licensed.
 
 ## Corresponding source for GPL/AGPL components

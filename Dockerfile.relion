@@ -28,8 +28,17 @@ RUN echo "${CTFFIND_SHA256}  /tmp/ctffind.tgz" | sha256sum -c - \
  && tar -xzf /tmp/ctffind.tgz -C "$CTFFIND_HOME" && rm -f /tmp/ctffind.tgz \
  && install -m 0755 "$CTFFIND_HOME"/bin/* /usr/local/bin/
 
-RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest \
-    | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
+ARG MICROMAMBA_VER=2.9.0-0
+ARG MICROMAMBA_SHA256=366cd9cd8be14df1ab8ed50352a82111082a36686b2d389fdb79a92c3fafb3e3
+ARG MAMBA_LICENSE_SHA256=41fd98a468e39d319911bd94f4e65d6ad6a7ea66559dd5aa4112f138ff9b629a
+RUN curl -fsSL -o /usr/local/bin/micromamba \
+      "https://github.com/mamba-org/micromamba-releases/releases/download/${MICROMAMBA_VER}/micromamba-linux-64" \
+ && echo "${MICROMAMBA_SHA256}  /usr/local/bin/micromamba" | sha256sum -c - \
+ && chmod 0755 /usr/local/bin/micromamba \
+ && mkdir -p /opt/licenses \
+ && curl -fsSL -o /opt/licenses/MICROMAMBA-LICENSE \
+      "https://raw.githubusercontent.com/mamba-org/mamba/${MICROMAMBA_VER%-*}/LICENSE" \
+ && echo "${MAMBA_LICENSE_SHA256}  /opt/licenses/MICROMAMBA-LICENSE" | sha256sum -c -
 SHELL ["/bin/bash", "-l", "-c"]
 
 # exact commit for RELION_REF; changing it busts the clone cache when upstream moves. Empty = branch tip.
@@ -60,9 +69,13 @@ RUN make -j"$(nproc)" && make install
 RUN f=/usr/local/bin/relion_python_trace_amyloids; [ ! -e "$f" ] || sed -i 's|^relion_home=.*|relion_home="/usr/local"|' "$f"
 
 # upstream pins setuptools=59.5.0 (HIGH CVEs); bump it post-build. <81 keeps pkg_resources.
-# Drop the package cache too: it still holds the old setuptools and isn't needed at runtime.
+# Drop the package cache too (holds the old setuptools), keeping each conda package's license files.
 RUN micromamba run -n "$(sed -n 's/^name: *//p' /opt/relion/environment.yml)" \
     pip install --no-cache-dir "setuptools>=78.1.1,<81" \
+ && find "${MAMBA_ROOT_PREFIX}/pkgs" -path '*/info/licenses' -type d | while read -r d; do \
+      mkdir -p /opt/licenses/conda && cp -r "$d" "/opt/licenses/conda/$(basename "$(dirname "$(dirname "$d")")")"; \
+    done \
+ && test -n "$(ls -A /opt/licenses/conda)" \
  && rm -rf "${MAMBA_ROOT_PREFIX}/pkgs"
 
 # ---- runtime stage (CUDA runtime libs only) ----
@@ -109,5 +122,6 @@ USER relion
 RUN /root/.local/share/mamba/envs/relion-*/bin/python -c "import dynamight" \
  && relion_python_dynamight --help > /dev/null \
  && grep -q '^torch_home=""$' /usr/local/bin/relion_python_blush \
- && { [ ! -e /usr/local/bin/relion_python_trace_amyloids ] || relion_python_trace_amyloids --help > /dev/null; }
+ && { [ ! -e /usr/local/bin/relion_python_trace_amyloids ] || relion_python_trace_amyloids --help > /dev/null; } \
+ && test -s /opt/licenses/MICROMAMBA-LICENSE && test -n "$(ls -A /opt/licenses/conda)"
 WORKDIR /work

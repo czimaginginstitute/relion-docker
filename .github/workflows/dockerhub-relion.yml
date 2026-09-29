@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'   # weekly: picks up apt security fixes (APT_REFRESH) and upstream ver5.x moves
 
 concurrency:
   group: docker-relion-${{ github.ref }}

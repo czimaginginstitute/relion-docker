@@ -24,15 +24,17 @@ docker build -f Dockerfile.relion -t relion:test .
 docker build -f extras/Dockerfile.relion-zarr-sta -t relion-zarr-sta:test .
 ```
 
-On a machine without Docker (e.g. testing the HPC path), convert and run with Apptainer instead:
+`extras/Dockerfile.relion-zarr-sta` builds `FROM` the published `ghcr.io/czimaginginstitute/relion` image,
+not your local `relion:test`.
+
+To test the HPC path, convert the local image with Apptainer (on the same machine as Docker):
 
 ```bash
 apptainer build relion-zarr-sta.sif docker-daemon://relion-zarr-sta:test
 apptainer exec --nv relion-zarr-sta.sif relion_refine --version
 ```
 
-`client/` is a separate Python package — see [`client/README.md`](client/README.md) for its own
-development notes.
+`client/` is a separate Python package — see [`client/README.md`](client/README.md).
 
 ## Making Changes
 
