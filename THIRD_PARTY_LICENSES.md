@@ -4,15 +4,16 @@ relion-docker's own code (Dockerfiles, CI configuration, `client/`) is MIT-licen
 [LICENSE.md](LICENSE.md)). The images this repository builds bundle third-party software under
 its own upstream license, listed below.
 
-This file is bundled inside the images themselves at `/opt/licenses/THIRD_PARTY_LICENSES.md`,
-alongside RELION's own license text (`/opt/licenses/RELION-LICENSE`) and the exact upstream
-RELION commit that was compiled in (`/opt/licenses/RELION-SOURCE-COMMIT.txt`, also recorded as
-the `org.relion.source.revision` image label). Each apt package additionally carries its own
-`/usr/share/doc/<pkg>/copyright`, each conda package its license files under
-`/opt/licenses/conda/<name>-<version>-<build>/` (relion-zarr-sta's own env:
-`/opt/licenses/conda-zarr-sta/`), each pip package its `*.dist-info/` license, micromamba its
-BSD-3-Clause license at `/opt/licenses/MICROMAMBA-LICENSE`, and the NVIDIA CUDA base image its
-EULA at `/NGC-DL-CONTAINER-LICENSE`.
+License texts inside the images:
+
+| What | Where |
+|---|---|
+| this file, RELION's license (`RELION-LICENSE`), built RELION commit | `/opt/licenses/` |
+| apt packages | `/usr/share/doc/<pkg>/copyright` |
+| conda packages | `/opt/licenses/conda/` (relion-zarr-sta's env: `/opt/licenses/conda-zarr-sta/`) |
+| pip packages | each `*.dist-info/` |
+| micromamba (BSD-3-Clause) | `/opt/licenses/MICROMAMBA-LICENSE` |
+| NVIDIA CUDA base image EULA | `/NGC-DL-CONTAINER-LICENSE` |
 
 ## RELION
 
@@ -58,24 +59,18 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-Note: no LICENSE file ships inside the vendored binary tarball itself (it contains only
-`bin/ctffind` and a plotting script) — the above is reproduced from the sources cited, not from
-a file included in the tarball. The `ctffind` binary is the upstream prebuilt release, unmodified,
-and is statically linked. It includes Intel MKL (Intel Simplified Software License), wxWidgets
-(wxWindows Library Licence), glibc (LGPL-2.1-or-later), libstdc++ (GPL-3.0 with the GCC Runtime
-Library Exception), libtiff/libjpeg and zlib (permissive), and the Intel OpenMP runtime (libiomp5, Intel license).
+The tarball contains only `bin/ctffind` and a plotting script (no LICENSE file); the text above
+is from the sources cited. The binary is upstream's unmodified, statically linked build and
+includes Intel MKL (Intel Simplified Software License) and OpenMP runtime libiomp5 (Intel license), wxWidgets (wxWindows Library Licence), glibc
+(LGPL-2.1+), libstdc++ (GPL-3.0 with the GCC Runtime Library Exception), and libtiff, libjpeg and
+zlib (permissive).
 
 ## Other bundled software (conda/pip/apt packages)
 
-Both images also install a conda/pip environment (PyTorch, NumPy, napari, etc.; relion-zarr-sta
-adds its own env with py2rely and zarr-particle-tools) and apt packages. Each keeps its own upstream license and
-ships its own license text inside the image — apt packages at `/usr/share/doc/<pkg>/copyright`,
-conda packages under `/opt/licenses/conda/<name>-<version>-<build>/` (relion-zarr-sta's env:
-`/opt/licenses/conda-zarr-sta/`), pip packages in their `*.dist-info/` directory.
-micromamba (BSD-3-Clause, pinned version) is at `/opt/licenses/MICROMAMBA-LICENSE`; it is a single
-binary that statically bundles libsolv, libarchive, libcurl, OpenSSL, krb5 and others
-(BSD/MIT/Apache-2.0), and links dynamically only against the image's glibc. `relion-zarr-sta` adds py2rely and
-zarr-particle-tools, both MIT-licensed.
+The images also contain apt packages and conda/pip environments (PyTorch, NumPy, napari, …;
+relion-zarr-sta adds py2rely and zarr-particle-tools, both MIT), each under its own license (see
+the table above). micromamba statically bundles libsolv, libarchive, libcurl, OpenSSL, krb5 and others
+(BSD/MIT/Apache-2.0).
 
 ## Corresponding source for GPL/AGPL components
 
@@ -84,30 +79,19 @@ complete corresponding source for each is identified below; in addition, **we he
 any recipient of these images and for a period of three years, to provide the complete
 corresponding source for these components on request at opensource@biohub.org.**
 
-- **RELION** (GPL-2.0-or-later) — built from source from the
-  [3dem GitHub organization](https://github.com/3dem); the exact RELION commit is recorded at
+- **RELION** (GPL-2.0-or-later): [3dem/relion](https://github.com/3dem/relion) at the commit in
   `/opt/licenses/RELION-SOURCE-COMMIT.txt`.
-- RELION's companion tools **relion-classranker** and **topaz** (GPL-3.0); relion-blush and
-  model-angelo (MIT) and DynaMight (BSD) are listed for completeness.
-- **Ubuntu 22.04 packages**, including **FFTW3** (GPL-2.0-or-later), **Ghostscript** (AGPL-3.0)
-  and the GPL base-system packages (bash, coreutils, …) — installed unmodified from the
-  Ubuntu 22.04 archive; corresponding source is available from Ubuntu (e.g. `apt-get source
-  <pkg>`). Ghostscript is invoked only as a local command-line tool and is never exposed to
-  users over a network, so the AGPL §13 (remote-network-interaction) source requirement does
-  not apply; the ordinary source requirement for binary distribution is covered by this offer.
-- **PyQt5** (GPL-3.0) and the Qt 5 libraries it pulls in via `PyQt5-Qt5` (LGPL-3.0) — installed
-  unmodified via pip; corresponding source is the upstream sdist on PyPI / from Riverbank
-  Computing and the Qt Project.
-- **glibc** (LGPL-2.1-or-later), statically linked into the upstream `ctffind` binary (see above);
-  source from the GNU project.
-- 5.1 images only: `opencv-python` (from RELION's upstream env) bundles its own Qt 5 and FFmpeg
-  libraries (LGPL); see its `dist-info/LICENSE-3RD-PARTY.txt`.
-- **conda-forge GPL packages** in both envs, e.g. `readline` (GPL-3.0) and binutils'
-  `ld_impl_linux-64` (GPL-3.0) — installed unmodified; corresponding source is linked from each
-  package's conda-forge feedstock, and license texts are under `/opt/licenses/conda*/`.
-- The RELION companion tools are installed from upstream git; each one's exact commit is in its
-  `<pkg>.dist-info/direct_url.json`.
+- **relion-classranker** and **topaz** (GPL-3.0), installed from upstream git; the commit is in
+  each `<pkg>.dist-info/direct_url.json`.
+- **Ubuntu 22.04 packages**, incl. FFTW3 (GPL-2.0+), Ghostscript (AGPL-3.0) and GPL base-system
+  packages (bash, coreutils, …), unmodified; source via `apt-get source <pkg>`. Ghostscript runs only as a local
+  command, never over a network, so AGPL §13 doesn't apply.
+- **PyQt5** (GPL-3.0) and its Qt 5 libraries via `PyQt5-Qt5` (LGPL-3.0), unmodified from PyPI;
+  source: PyPI sdists (Riverbank Computing, Qt Project).
+- **glibc** (LGPL-2.1+), statically linked into `ctffind` (above); source from GNU.
+- 5.1 only: `opencv-python` bundles Qt 5 and FFmpeg (LGPL); see its `LICENSE-3RD-PARTY.txt`.
+- **conda-forge GPL packages** (e.g. `readline`, binutils' `ld_impl_linux-64`, GPL-3.0), unmodified; source
+  via each conda-forge feedstock.
 
-`libgomp` is licensed GPL-3.0 **with the GCC Runtime Library Exception**, which permits
-distribution alongside compiled programs without a corresponding-source obligation for the
-runtime library, so it is not covered by the offer above.
+`libgomp` (GPL-3.0 with the GCC Runtime Library Exception) has no corresponding-source
+obligation and isn't covered by the offer.
