@@ -41,8 +41,11 @@ Most HPC clusters don't provide Docker (no root access); use Apptainer instead.
    export PATH="$HOME/relion-shims/bin:$PATH"
    ```
 
-   `--bind` is the storage your data lives on (repeatable). Put the SIF and the wrapper folder on
-   storage the compute nodes can see. Requires Python ≥3.10.
+   `--bind` is the storage your data lives on (repeatable). Put the SIF, the wrapper folder and the
+   Python env you installed the client into on storage the compute nodes can see; the compute nodes
+   also need `apptainer` (or `singularity`, whichever the client used) on `PATH`. If jobs don't inherit your environment, or you load
+   apptainer/your env with a module, re-add those lines with `py2rely config add` (see
+   [`client/README.md`](client/README.md)). Requires Python ≥3.10.
 
 RELION and zarr-particle-tools' job commands now run inside the container, both when you call
 them and when py2rely's SLURM job scripts do. `--wire-py2rely` **replaces** py2rely's
@@ -56,9 +59,9 @@ the image, and the zarr-particle-tools job commands (e.g. `relion_refine_mpi`,
 `zarr-particle-extract`); you put that folder first on `PATH`. Each wrapper has
 the same name as the real binary, so anything that calls that name (a SLURM job script, py2rely,
 you typing it in a shell) can't tell the difference; it just runs. Under the hood, the wrapper
-runs `apptainer exec --nv [--bind …] /abs/path/relion-zarr-sta.sif <the real binary> "$@"`
+runs `apptainer exec --nv [--env …] [--bind …] /abs/path/relion-zarr-sta.sif <the real binary> "$@"`
 (zarr-particle-tools commands via `micromamba run -n relion-zarr-sta`), passing through whatever
-arguments it was called with. So the binary itself never has to exist natively on the machine;
+arguments it was called with. Host `PYTHONPATH` and `~/.local` site-packages are ignored inside. So the binary itself never has to exist natively on the machine;
 the wrapper stands in for it and transparently hands the work to the container.
 
 `py2rely` and `zarr-particle-pipeline` themselves are not wrapped this way, because they call

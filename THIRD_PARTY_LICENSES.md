@@ -63,7 +63,7 @@ Note: no LICENSE file ships inside the vendored binary tarball itself (it contai
 a file included in the tarball. The `ctffind` binary is the upstream prebuilt release, unmodified,
 and is statically linked. It includes Intel MKL (Intel Simplified Software License), wxWidgets
 (wxWindows Library Licence), glibc (LGPL-2.1-or-later), libstdc++ (GPL-3.0 with the GCC Runtime
-Library Exception), and libtiff/libjpeg (permissive).
+Library Exception), libtiff/libjpeg and zlib (permissive), and the Intel OpenMP runtime (libiomp5, Intel license).
 
 ## Other bundled software (conda/pip/apt packages)
 
