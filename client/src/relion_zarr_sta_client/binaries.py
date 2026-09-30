@@ -1,6 +1,5 @@
-# zarr-particle-tools job binaries that live inside the image's micromamba env, need
-# `micromamba run -n`. py2rely and zarr-particle-pipeline are deliberately excluded: they call
-# `sbatch` themselves, which needs the host's SLURM/identity setup and doesn't work run this way.
+# zarr-particle-tools job commands (run via `micromamba run -n`). py2rely and zarr-particle-pipeline
+# stay native: they call sbatch, which needs the host's SLURM setup.
 ENV_BINS = [
     "zarr-particle-extract",
     "zarr-particle-reconstruct",

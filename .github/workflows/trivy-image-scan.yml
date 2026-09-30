@@ -1,9 +1,7 @@
 name: Trivy image scan
 
-# Scan of the published images; report all severities, fail on CRITICAL.
 on:
   workflow_dispatch:
-  # scan right after each successful main build (incl. the weekly rebuild)
   workflow_run:
     workflows: [ "Build & Push RELION (CUDA) to Docker Hub & GitHub Packages" ]
     types: [ completed ]
@@ -15,7 +13,7 @@ permissions:
 jobs:
   scan:
     name: Scan ${{ matrix.image.name }}:${{ matrix.image.tag }}
-    # scan published images even if only a SIF publish failed; never for PR-triggered runs
+    # scan even if only a SIF publish failed
     if: >-
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.event != 'pull_request' &&
@@ -60,7 +58,7 @@ jobs:
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           limit-severities-for-sarif: true
           ignore-unfixed: true
-          timeout: 20m   # default 5m is too short for the torch libs in 5.1
+          timeout: 20m   # default 5m is too short for 5.1's torch libs
           exit-code: '0'
           trivyignores: .trivyignore.yaml
 
@@ -71,7 +69,7 @@ jobs:
           format: table
           severity: CRITICAL
           ignore-unfixed: true
-          timeout: 20m   # default 5m is too short for the torch libs in 5.1
+          timeout: 20m
           exit-code: '1'
           trivyignores: .trivyignore.yaml
           skip-setup-trivy: true

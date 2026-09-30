@@ -1,6 +1,5 @@
 name: GHCR cleanup
 
-# Deletes GHCR versions no tagged version references (see .github/scripts/ghcr-prune.py).
 on:
   schedule:
     - cron: '17 14 * * 1'   # after the Monday rebuild
@@ -39,7 +38,6 @@ jobs:
           - { package: relion-zarr-sta-sif, mode: sif, min_age_hours: 336 }
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # PRs always dry-run; schedule deletes; manual runs default to dry-run
       DELETE: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
