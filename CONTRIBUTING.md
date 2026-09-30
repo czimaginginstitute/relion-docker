@@ -18,7 +18,7 @@ cd relion-docker
 git lfs install && git lfs pull   # the vendored CTFFIND tarball is in Git LFS
 ```
 
-Build an image locally (CUDA_ARCH as in CI; the default is RELION's own fallback):
+Build locally (CUDA_ARCH as in CI):
 
 ```bash
 docker build -f Dockerfile.relion --build-arg CUDA_ARCH=80 -t relion:test .
@@ -27,11 +27,9 @@ docker build -f Dockerfile.relion --build-arg RELION_REF=ver5.1 \
 docker build -f extras/Dockerfile.relion-zarr-sta -t relion-zarr-sta:test .
 ```
 
-`extras/Dockerfile.relion-zarr-sta` builds `FROM` the published `ghcr.io/czimaginginstitute/relion`
-image, not your local `relion:test`. To build on your local image instead, tag it first:
-`docker tag relion:test ghcr.io/czimaginginstitute/relion:5.0-cuda12.8.0`.
-
-To test the HPC path, convert the local image with Apptainer (on the same machine as Docker):
+The zarr-sta build uses the published `ghcr.io/czimaginginstitute/relion` base; to use yours,
+`docker tag relion:test ghcr.io/czimaginginstitute/relion:5.0-cuda12.8.0` first. To test with
+Apptainer (same machine as Docker):
 
 ```bash
 apptainer build relion-zarr-sta.sif docker-daemon://relion-zarr-sta:test
@@ -48,10 +46,8 @@ apptainer exec --nv relion-zarr-sta.sif relion_refine --version
    command, not just that the build succeeds
 4. Open a pull request against `main`, describing what changed and why, and how you tested it
 
-On PRs that change image inputs, CI builds all relion images; relion-zarr-sta is built (against
-the *published* relion base) when its Dockerfile, `Dockerfile.relion` or the workflow changes. On merge to `main`, and weekly (Monday
-06:23 UTC), it pushes the images and publishes their SIFs (skipping SIFs whose image is
-unchanged), then scans them with Trivy. Publishing only happens from `main`.
+CI builds the images on PRs that change them (zarr-sta against the published relion base). Pushes to `main` (and a weekly rebuild) publish the
+images and SIFs, then scan them with Trivy; only `main` publishes.
 
 ### Commit / PR title convention
 
