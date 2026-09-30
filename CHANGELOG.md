@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.1](https://github.com/czimaginginstitute/relion-docker/compare/relion-docker-v0.3.0...relion-docker-v0.3.1) (2026-09-30)
+
+
+### 🐞 Bug Fixes
+
+* **client:** wrapper permissions follow the user's umask ([#43](https://github.com/czimaginginstitute/relion-docker/issues/43)) ([4b2fec8](https://github.com/czimaginginstitute/relion-docker/commit/4b2fec8db0c3f1d468fd884b541964d876633b62))
+* **client:** wrappers work when their paths are passed into the container ([#45](https://github.com/czimaginginstitute/relion-docker/issues/45)) ([4443c3f](https://github.com/czimaginginstitute/relion-docker/commit/4443c3fc790d3c889e2322a22eb8199d1d7440ab))
+* keep conda license files, pin micromamba, weekly rebuild, SIF key covers config, docs ([#35](https://github.com/czimaginginstitute/relion-docker/issues/35)) ([399e9d4](https://github.com/czimaginginstitute/relion-docker/commit/399e9d44b3b65a71f4b1ca349761be638021d0c6))
+* publish only from main, keep PRs out of the build cache, fix client paths ([#34](https://github.com/czimaginginstitute/relion-docker/issues/34)) ([a4c8e63](https://github.com/czimaginginstitute/relion-docker/commit/a4c8e635c69d3a423e15519896e4e70a678e0529))
+* review round 2 (schedule filter, cleanup, zarr-sta licenses, client, docs) ([#38](https://github.com/czimaginginstitute/relion-docker/issues/38)) ([c2172fe](https://github.com/czimaginginstitute/relion-docker/commit/c2172fe0d1fae5299b7667e0958d51a6064e6cb6))
+* review round 3 (wrap all relion binaries, prune referrers, trivy gate, docs) ([#39](https://github.com/czimaginginstitute/relion-docker/issues/39)) ([531c3e5](https://github.com/czimaginginstitute/relion-docker/commit/531c3e5a70f338c7822c8385db62e765104d3947))
+* review round 4 (client runtime/env/stale shims, docs) ([#40](https://github.com/czimaginginstitute/relion-docker/issues/40)) ([fe9ead9](https://github.com/czimaginginstitute/relion-docker/commit/fe9ead921daa480eda9d0bf99628b09a99c4f168))
+* review round 5 (client never overwrites user files, docs) ([#41](https://github.com/czimaginginstitute/relion-docker/issues/41)) ([7a8149e](https://github.com/czimaginginstitute/relion-docker/commit/7a8149e31226e0a7e901a6cf7a0b8ededbbd7909))
+
+
+### 📝 Documentation
+
+* trim README, client README, CONTRIBUTING, SECURITY, licenses to essentials ([#44](https://github.com/czimaginginstitute/relion-docker/issues/44)) ([1dfcee1](https://github.com/czimaginginstitute/relion-docker/commit/1dfcee1f121596f911be9e62b421d9d12c44689d))
+
+
+### 🧹 Miscellaneous Chores
+
+* trim verbose comments (no functional change) ([#42](https://github.com/czimaginginstitute/relion-docker/issues/42)) ([e4921b4](https://github.com/czimaginginstitute/relion-docker/commit/e4921b42db9a32c61d9ff7f09d8e8e773bc86866))
+
+
+### 🛠️ Build System
+
+* add sm_100 (B200/GB200) to the RELION 5.1 CUDA arch list ([#36](https://github.com/czimaginginstitute/relion-docker/issues/36)) ([fd455a4](https://github.com/czimaginginstitute/relion-docker/commit/fd455a41f8e8c5fcad01d10b3b849fb4d00f9c38))
+
+
+### ⚙ Continuous Integration
+
+* skip SIF publish when the source image layers are unchanged ([#32](https://github.com/czimaginginstitute/relion-docker/issues/32)) ([2ddeaeb](https://github.com/czimaginginstitute/relion-docker/commit/2ddeaebbd9c7988dbd22ceedf37ee2abf13d4e21))
+
 ## [0.3.0](https://github.com/czimaginginstitute/relion-docker/compare/relion-docker-v0.2.0...relion-docker-v0.3.0) (2026-09-27)
 
 
