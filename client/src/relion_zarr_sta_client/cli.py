@@ -28,6 +28,11 @@ def find_runtime() -> str:
             return rt
     raise SystemExit("error: neither apptainer nor singularity is on PATH (load its module and re-run)")
 
+
+_UMASK = os.umask(0)
+os.umask(_UMASK)
+
+
 def _is_ours(path: Path) -> bool:
     """regular file (not a symlink) carrying our marker near the top"""
     if path.is_symlink() or not path.is_file():
@@ -52,7 +57,7 @@ def _write_shim(outdir: Path, name: str, runtime: str, sif: Path, binds: list[st
             f.write(text)
             f.flush()
             os.fsync(f.fileno())
-        os.chmod(tmp, 0o755)
+        os.chmod(tmp, 0o777 & ~_UMASK)  # mkstemp creates 0600; apply the user's umask
         os.replace(tmp, outdir / name)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
