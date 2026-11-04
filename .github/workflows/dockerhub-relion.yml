@@ -276,7 +276,7 @@ jobs:
 
       - name: Set up Apptainer
         if: steps.check.outputs.skip != 'true'
-        uses: eWaterCycle/setup-apptainer@3f706d898c9db585b1d741b4692e66755f3a1b40 # v2
+        uses: eWaterCycle/setup-apptainer@95b5c781df5f72fd2271cc3cff06904a09d2a087 # v3.0.0
 
       - name: Log in to GHCR (oras)
         if: steps.check.outputs.skip != 'true'
@@ -351,7 +351,7 @@ jobs:
 
       - name: Set up Apptainer
         if: steps.check.outputs.skip != 'true'
-        uses: eWaterCycle/setup-apptainer@3f706d898c9db585b1d741b4692e66755f3a1b40 # v2
+        uses: eWaterCycle/setup-apptainer@95b5c781df5f72fd2271cc3cff06904a09d2a087 # v3.0.0
 
       - name: Log in to GHCR (oras)
         if: steps.check.outputs.skip != 'true'
