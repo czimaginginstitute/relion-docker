@@ -152,7 +152,7 @@ jobs:
           echo "apt_refresh=$(date -u +%G-W%V)" >> $GITHUB_OUTPUT
 
       - name: Build & Push RELION-only Image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: Dockerfile.relion
           context: .
@@ -192,7 +192,7 @@ jobs:
 
       - name: Build & Push RELION-Zarr-STA Image
         if: ${{ matrix.build_relion_zarr_sta && (github.event_name != 'pull_request' || needs.changes.outputs.relion_zarr_sta == 'true') }}
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: extras/Dockerfile.relion-zarr-sta
           context: .
